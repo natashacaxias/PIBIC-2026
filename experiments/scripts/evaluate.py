@@ -29,7 +29,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.queenscamp import load_config, sequence_dir  # noqa: E402
 
 RUN_FIELDS = ['algorithm', 'sequence', 'condition', 'seed', 'status', 'n_frames', 'n_matched', 'tracked_fraction',
-              'ate_m', 'ate_metric', 'ate_sim3_m', 'ate_stepscale_m', 'rpe_trans_m', 'rpe_trans_pct', 'rpe_rot_deg',
+              'ate_m', 'ate_metric', 'ate_sim3_m', 'ate_stepscale_m', 'sim3_scale', 'rpe_trans_m', 'rpe_trans_pct',
+              'rpe_rot_deg',
               'wall_s', 'mean_ms_per_frame', 'peak_gpu_mib', 'error']
 SUMMARY_METRICS = ['ate_m', 'tracked_fraction', 'rpe_trans_pct', 'rpe_rot_deg']
 
@@ -52,12 +53,13 @@ def step_scaled(est, ref):
     return PoseTrajectory3D(poses_se3=out, timestamps=np.array(est.timestamps, copy=True))
 
 
-def ate(ref, est, correct_scale):
+def ate(ref, est, correct_scale, return_scale=False):
     aligned = copy.deepcopy(est)
-    aligned.align(ref, correct_scale=correct_scale)
+    _, _, scale = aligned.align(ref, correct_scale=correct_scale)
     metric = metrics.APE(metrics.PoseRelation.translation_part)
     metric.process_data((ref, aligned))
-    return metric.get_statistic(metrics.StatisticsType.rmse), aligned
+    rmse = metric.get_statistic(metrics.StatisticsType.rmse)
+    return (rmse, aligned, float(scale)) if return_scale else (rmse, aligned)
 
 
 def rpe(ref, est, delta):
@@ -73,9 +75,11 @@ def rpe(ref, est, delta):
 
 def trajectory_metrics(ref, est, monocular, delta, primary='sim3'):
     """Métricas de uma trajetória já associada ao ground truth; o RPE usa o alinhamento principal."""
-    out = {'ate_sim3_m': None, 'ate_stepscale_m': None}
+    out = {'ate_sim3_m': None, 'ate_stepscale_m': None, 'sim3_scale': None}
     if monocular:
-        out['ate_sim3_m'], sim3 = ate(ref, est, correct_scale=True)
+        # o fator de escala do Sim(3) fica registrado: valores muito longe da mediana do
+        # método indicam trajetória degenerada "encolhida" para caber no ground truth
+        out['ate_sim3_m'], sim3, out['sim3_scale'] = ate(ref, est, correct_scale=True, return_scale=True)
         out['ate_stepscale_m'], stepped = ate(ref, step_scaled(est, ref), correct_scale=False)
         out['ate_metric'], aligned = (primary, sim3 if primary == 'sim3' else stepped)
         out['ate_m'] = out[f'ate_{primary}_m']

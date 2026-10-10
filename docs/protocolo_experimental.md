@@ -21,7 +21,7 @@ Jira: NATASHA-26. Escrito em 10/10/2026 a partir das leituras (`docs/leituras/`)
 ## 3. Condições (10) e dados
 - **Originais e falhas do QueensCAMP (7):** original, subexposição (γ = 2), superexposição (γ = 0,5), quebra, molhada, condensação, sujeira. Já vêm prontas no download *Full Sequence*.
 - **Fumaça (3):** Koschmieder homogêneo com V = 60 / 20 / 6 m (β = 3,912/V), A = (0,8; 0,8; 0,8) provisório e buracos de profundidade preenchidos por dilatação (`smoke_emulation/`). A transmissão média de cada sequência fica registrada (ver `docs/nota_niveis_fumaca.md`).
-- **Baseline com dehazing (Sprint 8, NATASHA-17):** DCP aplicado às 3 condições de fumaça **e à original** (controle do efeito do DCP sem fumaça).
+- **Baseline com dehazing (Sprint 8, NATASHA-17):** DCP (patch 15, ω = 0,95, t₀ = 0,1, guided filter r = 60) aplicado às 3 condições de fumaça **e à original** (controle do efeito do DCP sem fumaça). São 4 condições `dcp_*` desligadas por padrão no `experiment.json`. **A é estimado uma vez por sequência** (mediana), para não introduzir oscilação de brilho entre quadros. Limitação conhecida: em cena interna rasa nenhuma região fica opaca, e a estimativa de A puxa a cor da cena (verificado nos testes de `smoke_emulation/tests/test_dcp.py`). Implementação em `smoke_emulation/dcp.py`; geração com `dataset.py dehaze`.
 - **16 sequências.** Analisar também por estrato: dinâmicas (01, 04–07), pouca luz (14–16) e estáticas.
 
 ## 4. Métricas
@@ -43,10 +43,13 @@ O critério da proposta, "ATE < 0,3 m e rastreamento > 80% em ≥ 75% das sequê
 - **Principal (relativo):** o método é robusto a uma condição se (i) rastreamento ≥ 80% em ≥ 75% das sequências **e** (ii) a mediana da degradação do ATE em relação à própria condição original for ≤ X% (sugestão: X = 50).
 - **Secundário (absoluto):** manter ATE < 0,3 m apenas como informação descritiva.
 
-## 6. Estatística (etapa 5 da proposta)
+## 6. Estatística (etapa 5 da proposta) — implementada em `experiments/scripts/stats_analysis.py`
 - **Unidade de análise:** sequência (mediana das repetições), n = 16 pareado.
 - **Comparação entre métodos por condição:** Wilcoxon pareado sobre a **degradação relativa**, com correção de Bonferroni e IC 95% por bootstrap (10.000 reamostragens).
 - **Efeito de cada condição dentro do método:** Wilcoxon pareado entre original e condição.
+- **Famílias de Bonferroni:** (i) todos os pares de métodos × condições; (ii) métodos × condições contra a original.
+- **Tamanho de efeito:** correlação bisserial de postos. Com n = 16, o menor p exato do Wilcoxon é 3,05 × 10⁻⁵, o que dá margem para Bonferroni.
+- Testes com menos de 6 sequências pareadas não recebem p (o Wilcoxon bilateral não atinge 0,05).
 
 ## 7. Custo estimado
 | Método | Horas (10 condições) | Recurso |

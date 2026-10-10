@@ -133,7 +133,9 @@ As sprints 1–4 (jun–out/2026) ainda constam como futuras e nenhuma tarefa sa
 | NATASHA-10 | wrappers + patches ORB-SLAM2, matriz, avaliação | preparado; **validação depende da GPU e dos dados** |
 | NATASHA-11 | módulo de fumaça completo com CLI | entregue; falta rodar em dados reais |
 | NATASHA-26 | `docs/protocolo_experimental.md` | rascunho para aprovação |
-| NATASHA-23 | pauta com o orientador | **depende da Natasha** |
+| NATASHA-23 | pauta com o orientador + `docs/analise_concorrentes_2026.md` | **depende da Natasha** |
+| NATASHA-17 (adiantada) | DCP com guided filter + condições `dcp_*` no pipeline | implementado e testado; falta rodar em dados reais |
+| NATASHA-19 (adiantada) | `stats_analysis.py`: Wilcoxon, Bonferroni, bootstrap e critério de robustez | implementado e testado com dados sintéticos |
 
 ## 6. Leituras complementares sugeridas
 

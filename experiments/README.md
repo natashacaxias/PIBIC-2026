@@ -8,15 +8,16 @@ experiments/
 ├── lib/queenscamp.py           # layout das sequências, listas de entrada, matriz de execuções
 ├── scripts/
 │   ├── check_gpu.sh            # driver, Docker+GPU, sm_120 no PyTorch (NATASHA-25)
-│   ├── dataset.py              # download | inspect | smoke
+│   ├── dataset.py              # download | inspect | smoke | dehaze
 │   ├── run_matrix.py           # executa a matriz (retomável)
-│   └── evaluate.py             # metrics.csv + summary.csv
+│   ├── evaluate.py             # metrics.csv + summary.csv
+│   └── stats_analysis.py       # Wilcoxon + Bonferroni + bootstrap + critério de robustez
 ├── algorithms/
 │   ├── orbslam2/               # Ubuntu 18.04; patches: sem loop closure, TUM monocular, runner
 │   ├── tartanvo/               # CUDA 12.8 + PyTorch 2.7 + cupy
 │   ├── dpvo/                   # CUDA 12.8 + PyTorch 2.7, extensões compiladas para sm_120
 │   └── droidslam/              # reserva
-└── tests/test_pipeline.py      # 10 testes, rodam sem GPU
+└── tests/                      # 17 testes, rodam sem GPU
 ```
 
 ## Ordem de execução
@@ -53,6 +54,14 @@ bash scripts/check_gpu.sh
 # 6) matriz completa: GPU e CPU em paralelo
 .venv/bin/python scripts/run_matrix.py --algorithms dpvo tartanvo   > gpu.log 2>&1 &
 .venv/bin/python scripts/run_matrix.py --algorithms orbslam2_mono orbslam2_rgbd > cpu.log 2>&1 &
+
+# 7) baseline de dehazing (Sprint 8): gerar e rodar as condições dcp_* (desligadas por padrão)
+.venv/bin/python scripts/dataset.py dehaze
+.venv/bin/python scripts/run_matrix.py --conditions dcp_original dcp_smoke_leve dcp_smoke_moderada dcp_smoke_densa
+
+# 8) métricas e estatística
+.venv/bin/python scripts/evaluate.py
+.venv/bin/python scripts/stats_analysis.py      # results/stats_report.md
 ```
 
 ## Saídas de cada execução
