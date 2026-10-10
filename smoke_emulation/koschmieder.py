@@ -35,28 +35,70 @@ def visibility_from_beta(beta, contrast_threshold=CONTRAST_THRESHOLD):
     return -math.log(contrast_threshold) / beta
 
 
-def fill_depth_holes(depth_m, fill_value=None):
-    """Substitui pixels sem medida (<= 0 ou não finitos) por fill_value.
+def _dilate_max(values):
+    padded = np.pad(values, 1, constant_values=-np.inf)
+    h, w = values.shape
+    return np.max([padded[i:i + h, j:j + w] for i in range(3) for j in range(3)], axis=0)
 
-    Por padrão usa a maior profundidade válida: buracos de sensores RGB-D
-    costumam ser superfícies distantes ou reflexivas, e deixá-los com d=0
-    produziria "janelas" sem fumaça. Substituir por inpainting quando houver OpenCV.
+
+def fill_depth_holes(depth_m, fill_value=None, method="dilate", max_iterations=50):
+    """Substitui pixels sem medida (<= 0 ou não finitos).
+
+    Deixar d=0 produziria "janelas" sem fumaça. method="dilate" propaga o maior
+    vizinho válido (3x3) iterativamente: buracos de reprojeção RGB-D ficam nas
+    bordas de objetos e o fundo é o valor mais plausível. O que sobra após
+    max_iterations, ou tudo com method="max", recebe fill_value (padrão: a maior
+    profundidade válida, pois buracos grandes costumam ser superfícies distantes
+    ou reflexivas).
     """
     depth = np.asarray(depth_m, dtype=np.float64)
     invalid = ~np.isfinite(depth) | (depth <= 0)
     if not invalid.any():
         return depth.copy()
-    if fill_value is None:
-        if invalid.all():
-            raise ValueError("mapa de profundidade sem nenhum pixel válido")
-        fill_value = float(depth[~invalid].max())
-    filled = depth.copy()
-    filled[invalid] = fill_value
+    if invalid.all():
+        raise ValueError("mapa de profundidade sem nenhum pixel válido")
+    filled = np.where(invalid, -np.inf, depth)
+    if method == "dilate":
+        for _ in range(max_iterations):
+            grown = _dilate_max(filled)
+            newly = invalid & np.isfinite(grown)
+            if not newly.any():
+                break
+            filled[newly] = grown[newly]
+            invalid &= ~newly
+            if not invalid.any():
+                break
+    elif method != "max":
+        raise ValueError(f"método de preenchimento desconhecido: {method}")
+    if invalid.any():
+        filled[invalid] = float(depth[np.isfinite(depth) & (depth > 0)].max()) if fill_value is None else fill_value
     return filled
 
 
 def transmission(depth_m, beta):
     return np.exp(-beta * np.asarray(depth_m, dtype=np.float64))
+
+
+def mean_transmission(depth_m, beta):
+    """Transmissão média da cena, usada para relatar a "densidade efetiva" por sequência."""
+    return float(transmission(fill_depth_holes(depth_m), beta).mean())
+
+
+def beta_for_mean_transmission(depth_m, target, tolerance=1e-6):
+    """Beta que produz a transmissão média `target` (0 < target < 1) na profundidade dada."""
+    if not 0.0 < target < 1.0:
+        raise ValueError("target deve estar entre 0 e 1")
+    depth = fill_depth_holes(depth_m)
+    low, high = 0.0, 1.0
+    while transmission(depth, high).mean() > target:
+        high *= 2.0
+    while high - low > tolerance:
+        mid = (low + high) / 2.0
+        if transmission(depth, mid).mean() > target:
+            low = mid
+        else:
+            high = mid
+    return (low + high) / 2.0
 
 
 def apply_smoke(rgb, depth_m, beta, atmospheric_light=DEFAULT_ATMOSPHERIC_LIGHT):
