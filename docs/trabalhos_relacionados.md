@@ -20,6 +20,8 @@ O modelo de Koschmieder, com transmissão exp(−β·d), é o padrão para névo
 Há datasets e métodos de VO/SLAM para floresta: FinnForest (2020, P1941)†, Windy Forest (2021, P2596)†, ForestVO (2025, P0622)†, SLAM visual-inercial para floresta (2025, P2625)† e navegação visual de UAV em floresta (2023, P2674/P2675)†. Trabalhos anteriores do grupo cobrem plataformas aéreas na Amazônia [4][5], marcos visuais em grandes áreas florestais [6] e realce de imagem em rios turvos [7]. Na pré-triagem, **nenhum trabalho avalia VO sob fumaça de queimada em floresta tropical**.
 
 ## 5. Posicionamento da proposta (a discutir com o orientador)
+
+> Análise detalhada, com leitura do código do SAL, em `docs/analise_concorrentes_2026.md`. Destaque: o "Failure or Drift?" usa **o mesmo trio ORB-SLAM2 × DPVO × DROID-SLAM**, mas no KITTI, com 1 execução por condição e sem descrever o modelo de névoa.
 Com SAL, "Failure or Drift?" e Kumar et al., **a ideia de "névoa por Koschmieder para testar SLAM" não é mais original por si só**. Contribuições que continuam defensáveis:
 1. **Fumaça de queimada, não névoa:** cor e densidade calibradas com fumaça real (SubT-MRS "Smoke Room") e validadas por métricas sem referência. Os trabalhos acima tratam névoa ou "dust haze".
 2. **Combinação de degradações reais de lente (QueensCAMP) com fumaça** no mesmo protocolo, incluindo TartanVO e DPVO.
