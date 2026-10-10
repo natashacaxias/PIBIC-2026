@@ -1,0 +1,1507 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/vo_slam_literature_review.schema.json",
+  "title": "Schema de Revisão Bibliográfica — VO/VSLAM Robusto em Condições Adversas",
+  "description": "Schema híbrido: núcleo comum obrigatório + módulos temáticos opcionais. Projetado para revisão bibliográfica sobre robustez de Visual Odometry/Visual SLAM, incluindo métodos clássicos, deep learning, corrupções, fumaça/névoa, datasets, métricas e cenários florestais/UAV.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "paper",
+    "classification",
+    "evidence",
+    "modules"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "paper": {
+      "$ref": "#/$defs/paperCore"
+    },
+    "classification": {
+      "$ref": "#/$defs/classification"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidenceItem"
+      },
+      "default": []
+    },
+    "modules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "fundamentals_taxonomy": {
+          "$ref": "#/$defs/fundamentalsTaxonomy"
+        },
+        "classical_geometric": {
+          "$ref": "#/$defs/classicalGeometric"
+        },
+        "deep_vo_slam": {
+          "$ref": "#/$defs/deepVOSLAM"
+        },
+        "robustness_corruptions": {
+          "$ref": "#/$defs/robustnessCorruptions"
+        },
+        "atmospheric_optical": {
+          "$ref": "#/$defs/atmosphericOptical"
+        },
+        "datasets_benchmarks": {
+          "$ref": "#/$defs/datasetsBenchmarks"
+        },
+        "metrics_protocol": {
+          "$ref": "#/$defs/metricsProtocol"
+        },
+        "forest_uav_amazon": {
+          "$ref": "#/$defs/forestUAVAmazon"
+        }
+      }
+    },
+    "project_implications": {
+      "$ref": "#/$defs/projectImplications"
+    }
+  },
+  "$defs": {
+    "nullableString": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "evidenceRefArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^E[0-9]{3,}$"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "paperCore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paper_id",
+        "title",
+        "authors",
+        "year",
+        "publication_type",
+        "research_problem",
+        "main_contribution",
+        "main_results",
+        "method_family",
+        "sensor_modalities",
+        "environment",
+        "datasets",
+        "evaluation_metrics",
+        "limitations_authors",
+        "limitations_reviewer",
+        "code_available",
+        "dataset_available"
+      ],
+      "properties": {
+        "paper_id": {
+          "type": "string",
+          "pattern": "^P[0-9]{4,}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "year": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1900,
+          "maximum": 2100
+        },
+        "venue": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "doi": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "publication_type": {
+          "type": "string",
+          "enum": [
+            "journal",
+            "conference",
+            "workshop",
+            "preprint",
+            "thesis",
+            "dataset_paper",
+            "survey",
+            "book_chapter",
+            "other",
+            "NR"
+          ]
+        },
+        "research_problem": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "research_question": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "method_name": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "method_family": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "feature_based",
+              "direct",
+              "semi_direct",
+              "hybrid",
+              "deep_learning",
+              "geometry_learning_hybrid",
+              "foundation_model",
+              "image_restoration",
+              "dataset",
+              "benchmark",
+              "survey",
+              "other",
+              "NR"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "sensor_modalities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "monocular_rgb",
+              "stereo_rgb",
+              "rgbd",
+              "rgb_imu",
+              "stereo_imu",
+              "lidar",
+              "thermal",
+              "event_camera",
+              "multimodal",
+              "other",
+              "NR"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "environment": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "indoor",
+              "urban_outdoor",
+              "road",
+              "forest",
+              "tropical_forest",
+              "underground",
+              "aerial",
+              "wildfire",
+              "aquatic",
+              "synthetic",
+              "mixed",
+              "other",
+              "NR"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "platform": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "datasets": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "evaluation_metrics": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "main_contribution": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "main_results": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "limitations_authors": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "limitations_reviewer": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "code_available": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "unclear",
+            "NR"
+          ]
+        },
+        "code_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "dataset_available": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "unclear",
+            "NR"
+          ]
+        },
+        "dataset_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "notes": {
+          "$ref": "#/$defs/nullableString"
+        }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "theme_primary",
+        "themes_secondary",
+        "review_function",
+        "priority",
+        "relevance_score",
+        "relevance_to_project"
+      ],
+      "properties": {
+        "theme_primary": {
+          "type": "string",
+          "enum": [
+            "fundamentals_taxonomy",
+            "classical_geometric",
+            "deep_vo_slam",
+            "robustness_corruptions",
+            "atmospheric_optical",
+            "datasets_benchmarks",
+            "metrics_protocol",
+            "forest_uav_amazon",
+            "other"
+          ]
+        },
+        "themes_secondary": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "fundamentals_taxonomy",
+              "classical_geometric",
+              "deep_vo_slam",
+              "robustness_corruptions",
+              "atmospheric_optical",
+              "datasets_benchmarks",
+              "metrics_protocol",
+              "forest_uav_amazon",
+              "other"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "review_function": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "FOUNDATION",
+              "METHOD_BASELINE",
+              "METHOD_CANDIDATE",
+              "ROBUSTNESS_EVIDENCE",
+              "DEGRADATION_MODEL",
+              "DATASET_CANDIDATE",
+              "METRICS_METHOD",
+              "AMAZON_CONTEXT",
+              "RELATED_ONLY"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "ESSENTIAL",
+            "IMPORTANT",
+            "COMPLEMENTARY"
+          ]
+        },
+        "relevance_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "relevance_to_project": {
+          "type": "string"
+        }
+      }
+    },
+    "evidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_id",
+        "claim_type",
+        "claim",
+        "quote_or_paraphrase",
+        "location",
+        "support_level"
+      ],
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "pattern": "^E[0-9]{3,}$"
+        },
+        "claim_type": {
+          "type": "string",
+          "enum": [
+            "method",
+            "result",
+            "dataset",
+            "metric",
+            "limitation",
+            "assumption",
+            "comparison",
+            "other"
+          ]
+        },
+        "claim": {
+          "type": "string"
+        },
+        "quote_or_paraphrase": {
+          "type": "string"
+        },
+        "location": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "page": {
+              "type": [
+                "integer",
+                "string",
+                "null"
+              ]
+            },
+            "section": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "table": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "figure": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "paragraph": {
+              "$ref": "#/$defs/nullableString"
+            }
+          }
+        },
+        "support_level": {
+          "type": "string",
+          "enum": [
+            "direct",
+            "indirect",
+            "reviewer_inference"
+          ]
+        },
+        "notes": {
+          "$ref": "#/$defs/nullableString"
+        }
+      }
+    },
+    "fundamentalsTaxonomy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "task_type": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "VO",
+              "SLAM",
+              "VIO",
+              "VISUAL_INERTIAL_SLAM",
+              "LOCALIZATION",
+              "MAPPING",
+              "OTHER",
+              "NR"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "estimation_scope": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "visual_input": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "frontend_type": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "backend_type": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "feature_or_representation": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "geometry_components": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "loop_closure_used": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "relocalization_used": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "scale_handling": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "core_assumptions": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "reported_failure_modes": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "taxonomy_contribution": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "project_connection": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/evidenceRefArray"
+        }
+      }
+    },
+    "classicalGeometric": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "classical_paradigm": {
+          "type": "string",
+          "enum": [
+            "feature_based",
+            "direct",
+            "semi_direct",
+            "hybrid",
+            "other",
+            "NR"
+          ]
+        },
+        "detector": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "descriptor": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "feature_matching_method": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "photometric_model": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "motion_estimation": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "outlier_rejection": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "keyframe_strategy": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "tracking_failure_definition": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "conditions_tested": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "degradation_effect_on_frontend": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "degradation_effect_on_pose": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "failure_chain": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "recovery_mechanism": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "advantages_reported": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "limitations_reported": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "relevance_for_ORB_DSO_baseline": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/evidenceRefArray"
+        }
+      }
+    },
+    "deepVOSLAM": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "learning_role": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "architecture_family": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "geometric_constraints_used": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "differentiable_optimization": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "training_type": {
+          "type": "string",
+          "enum": [
+            "supervised",
+            "self_supervised",
+            "unsupervised",
+            "mixed",
+            "NR"
+          ]
+        },
+        "training_datasets": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "training_domain": {
+          "type": "string",
+          "enum": [
+            "synthetic",
+            "real",
+            "mixed",
+            "NR"
+          ]
+        },
+        "test_datasets": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "training_test_domain_gap": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "generalization_experiment": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "generalization_details": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "adaptation_at_test_time": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "adaptation_details": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "uncertainty_modeling": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "uncertainty_details": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "temporal_modeling": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "pretrained_model_dependency": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "compute_requirements": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "failure_modes": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "comparison_with_classical_methods": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "relevance_to_TartanVO_DROID_DPVO": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/evidenceRefArray"
+        }
+      }
+    },
+    "robustnessCorruptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "robustness_definition": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "baseline_condition": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "corruptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "corruption_name",
+              "corruption_family",
+              "real_or_synthetic"
+            ],
+            "properties": {
+              "corruption_name": {
+                "type": "string"
+              },
+              "corruption_family": {
+                "type": "string",
+                "enum": [
+                  "photometric",
+                  "atmospheric",
+                  "lens_contamination",
+                  "optical_occlusion",
+                  "motion",
+                  "sensor_failure",
+                  "digital_corruption",
+                  "weather",
+                  "other"
+                ]
+              },
+              "real_or_synthetic": {
+                "type": "string",
+                "enum": [
+                  "real",
+                  "synthetic",
+                  "both",
+                  "NR"
+                ]
+              },
+              "generation_method": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "severity_levels": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "spatial_characteristic": {
+                "type": "string",
+                "enum": [
+                  "global",
+                  "local",
+                  "mixed",
+                  "NR"
+                ]
+              },
+              "temporal_characteristic": {
+                "type": "string",
+                "enum": [
+                  "static",
+                  "dynamic",
+                  "time_varying",
+                  "NR"
+                ]
+              },
+              "physical_plausibility_discussed": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "metrics_used": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "relative_degradation_reported": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "tracking_failure_reported": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "drift_reported": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "failure_vs_drift_distinguished": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "recovery_after_failure": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "methods_most_affected": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "authors_explanation": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "reviewer_mechanistic_interpretation": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "relevance_to_QueensCAMP": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "evidence_refs": {
+                "$ref": "#/$defs/evidenceRefArray"
+              }
+            }
+          },
+          "default": []
+        }
+      }
+    },
+    "atmosphericOptical": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "phenomena": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "real_or_simulated": {
+          "type": "string",
+          "enum": [
+            "real",
+            "simulated",
+            "both",
+            "NR"
+          ]
+        },
+        "image_formation_model": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "atmospheric_scattering_model": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "transmission_equation": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "depth_required": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "atmospheric_light_used": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "atmospheric_light_estimation": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "attenuation_parameter": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "severity_parameterization": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "homogeneous_medium_assumption": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "particle_properties_modeled": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "particle_properties_details": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "wavelength_dependence": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "spatially_varying_density": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "smoke_vs_fog_difference_discussed": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "smoke_vs_fog_summary": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "validation_against_real_images": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "validation_details": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "image_quality_metrics": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "downstream_robotics_evaluation": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "restoration_method": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "restoration_improves_perception": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "mixed",
+            "NR"
+          ]
+        },
+        "physical_limitations": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "relevance_to_smoke_emulation": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "potential_methodological_risk": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/evidenceRefArray"
+        }
+      }
+    },
+    "datasetsBenchmarks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "datasets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dataset_name",
+              "environment",
+              "sensor_modalities",
+              "adverse_conditions"
+            ],
+            "properties": {
+              "dataset_name": {
+                "type": "string"
+              },
+              "dataset_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uri"
+              },
+              "dataset_year": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1900,
+                "maximum": 2100
+              },
+              "dataset_purpose": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "environment": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "geographic_context": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "platform": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "sensor_modalities": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "camera_configuration": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "sequence_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "sequence_duration": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "ground_truth_source": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "ground_truth_accuracy": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "adverse_conditions": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "smoke_present": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "fog_or_haze_present": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "rain_present": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "wet_lens_present": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "condensation_present": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "illumination_variation": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "real_degradations": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "synthetic_degradations": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "NR"
+                ]
+              },
+              "severity_labels": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "benchmark_tasks": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "baseline_algorithms": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "evaluation_metrics": {
+                "$ref": "#/$defs/stringArray"
+              },
+              "publicly_available": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "unclear",
+                  "NR"
+                ]
+              },
+              "license": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "main_strength": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "main_limitation": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "domain_similarity_to_amazon": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "NR"
+                ]
+              },
+              "domain_similarity_explanation": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "comparison_to_QueensCAMP": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "comparison_to_SubT_MRS": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "candidate_for_project": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "maybe",
+                  "NR"
+                ]
+              },
+              "candidate_justification": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "evidence_refs": {
+                "$ref": "#/$defs/evidenceRefArray"
+              }
+            }
+          },
+          "default": []
+        }
+      }
+    },
+    "metricsProtocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "trajectory_metrics": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "ATE_definition": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "trajectory_alignment": {
+          "type": "string",
+          "enum": [
+            "SE3",
+            "Sim3",
+            "scale_only",
+            "none",
+            "NR"
+          ]
+        },
+        "RPE_delta": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "tracking_metric": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "trajectory_completeness_metric": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "failure_definition": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "success_definition": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "runtime_metric": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "memory_metric": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "hardware": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "repetitions_per_sequence": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "random_seeds_controlled": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "central_tendency": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "dispersion": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "statistical_tests": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "multiple_comparison_correction": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "confidence_intervals": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "bootstrap_used": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "bootstrap_resamples": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "paired_comparison": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "normalization_relative_to_clean_baseline": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "normalization_formula": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "failure_runs_handling": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "threshold_for_robustness": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "dataset_aggregation": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "computational_cost_considered": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "protocol_strengths": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "protocol_limitations": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "applicability_to_project": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/evidenceRefArray"
+        }
+      }
+    },
+    "forestUAVAmazon": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ecosystem": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "platform": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "flight_or_motion_pattern": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "camera_orientation": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "altitude_range": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "speed_range": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "GPS_availability": {
+          "type": "string",
+          "enum": [
+            "available",
+            "degraded",
+            "denied",
+            "mixed",
+            "NR"
+          ]
+        },
+        "visual_challenges": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "canopy_effect": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "lighting_effect": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "vegetation_motion_effect": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "weather_effect": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "smoke_or_fire_context": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "localization_method": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "sensor_fusion": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "ground_truth": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "VO_SLAM_methods_tested": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "failure_modes": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "operational_metrics": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "real_world_deployment": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "NR"
+          ]
+        },
+        "domain_gap_to_indoor_benchmarks": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "similarity_to_amazon_conditions": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "NR"
+          ]
+        },
+        "similarity_dimensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "climate": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "vegetation": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "lighting": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "platform": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "visibility": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "sensors": {
+              "$ref": "#/$defs/nullableString"
+            }
+          }
+        },
+        "transferable_findings": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "non_transferable_findings": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "project_relevance": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/evidenceRefArray"
+        }
+      }
+    },
+    "projectImplications": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "impact_classes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "NO_CHANGE",
+              "SUPPORTS_CURRENT_DESIGN",
+              "SUGGESTS_MINOR_CHANGE",
+              "SUGGESTS_NEW_BASELINE",
+              "SUGGESTS_NEW_DATASET",
+              "SUGGESTS_NEW_METRIC",
+              "QUESTIONS_ASSUMPTION",
+              "SUGGESTS_METHOD_REDESIGN"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "affected_components": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ORB_SLAM2",
+              "ORB_SLAM3",
+              "DSO",
+              "TartanVO",
+              "DROID_SLAM",
+              "DPVO",
+              "QueensCAMP",
+              "SubT_MRS",
+              "smoke_emulation",
+              "Dark_Channel_Prior",
+              "ATE",
+              "RPE",
+              "tracking_rate",
+              "latency",
+              "GPU_memory",
+              "statistics",
+              "amazon_pilot_dataset",
+              "domain_gap_analysis",
+              "other"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "implication_summary": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/evidenceRefArray"
+        }
+      }
+    }
+  }
+}

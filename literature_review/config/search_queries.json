@@ -1,0 +1,85 @@
+{
+  "project": "vo_slam_amazon_review",
+  "year_to": 2026,
+  "sources": [
+    "crossref",
+    "arxiv"
+  ],
+  "max_results_per_query": 50,
+  "themes": {
+    "fundamentals_taxonomy": {
+      "year_from": 2010,
+      "queries": [
+        "\"visual odometry\" survey",
+        "\"visual SLAM\" survey",
+        "\"visual odometry\" taxonomy",
+        "\"visual SLAM\" taxonomy"
+      ]
+    },
+    "classical_geometric": {
+      "year_from": 2010,
+      "queries": [
+        "\"visual odometry\" feature based robustness",
+        "\"direct visual odometry\" robustness",
+        "\"ORB-SLAM\" adverse conditions",
+        "\"DSO\" illumination robustness"
+      ]
+    },
+    "deep_vo_slam": {
+      "year_from": 2018,
+      "queries": [
+        "\"deep visual odometry\"",
+        "\"learning based visual odometry\"",
+        "\"deep visual SLAM\"",
+        "\"neural visual odometry\"",
+        "\"foundation model\" \"visual odometry\""
+      ]
+    },
+    "robustness_corruptions": {
+      "year_from": 2018,
+      "queries": [
+        "\"visual SLAM\" image corruption",
+        "\"visual odometry\" adverse conditions",
+        "\"visual SLAM\" robustness benchmark",
+        "\"visual odometry\" failure analysis"
+      ]
+    },
+    "atmospheric_optical": {
+      "year_from": 2015,
+      "queries": [
+        "\"visual odometry\" fog",
+        "\"visual SLAM\" fog",
+        "\"visual odometry\" smoke",
+        "\"visual SLAM\" smoke",
+        "\"camera\" smoke atmospheric scattering robotics"
+      ]
+    },
+    "datasets_benchmarks": {
+      "year_from": 2018,
+      "queries": [
+        "\"visual SLAM\" adverse weather dataset",
+        "\"visual odometry\" benchmark adverse conditions",
+        "\"SLAM\" all-weather dataset",
+        "\"camera corruption\" robotics dataset"
+      ]
+    },
+    "metrics_protocol": {
+      "year_from": 2015,
+      "queries": [
+        "\"visual odometry\" ATE RPE evaluation",
+        "\"SLAM\" robustness evaluation protocol",
+        "\"visual odometry\" tracking failure metric"
+      ]
+    },
+    "forest_uav_amazon": {
+      "year_from": 2015,
+      "queries": [
+        "\"visual odometry\" UAV forest",
+        "\"visual SLAM\" forest",
+        "\"visual navigation\" UAV forest",
+        "\"visual odometry\" wildfire UAV",
+        "\"SLAM\" tropical forest"
+      ]
+    }
+  }
+}

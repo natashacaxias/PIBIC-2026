@@ -1,0 +1,8 @@
+.env
+*.key
+secrets/
+__pycache__/
+data/
+exports/
+.venv/
+outputs/
