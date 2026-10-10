@@ -18,10 +18,13 @@ Koschmieder, com um dataset piloto coletado em Manaus.
 | `docs/protocolo_experimental.md` | Protocolo dos experimentos (rascunho para aprovação) |
 | `docs/datasets.md`, `docs/ambiente.md` | QueensCAMP/SubT-MRS e configuração da máquina do laboratório |
 | `docs/criterios_triagem.md`, `docs/nota_niveis_fumaca.md` | Critérios da revisão; justificativa dos níveis de fumaça |
+| `docs/analise_concorrentes_2026.md` | SAL, Failure or Drift? e Kumar et al.: o que muda na originalidade |
+| `docs/relatorio_parcial.md`, `docs/artigo_esqueleto.md` | Rascunho do relatório parcial e plano do artigo |
+| `docs/plano_coleta_piloto.md` | Plano de coleta do dataset piloto (aguarda dados do hardware) |
 | `experiments/` | Pipeline para a máquina do laboratório: Docker por algoritmo, matriz de execuções, avaliação |
 | `arquitetura_revisao_bibliografica_vo_slam.md` | Arquitetura da revisão bibliográfica (8 temas) |
 | `literature_review/` | Coleta, deduplicação, pré-triagem por regras e triagem auditáveis (Crossref/arXiv) |
-| `smoke_emulation/` | Emulação de fumaça (Koschmieder) por sequência, com metadados |
+| `smoke_emulation/` | Emulação de fumaça (Koschmieder), dehazing (DCP) e validação por métricas de imagem |
 | `vo_slam_literature_review.schema.json`, `prompt_extracao_revisao_vo_slam.txt` | Schema e prompt de extração |
 
 Dados brutos, corpus SQLite, PDFs, saídas e ambientes virtuais **não** são versionados
