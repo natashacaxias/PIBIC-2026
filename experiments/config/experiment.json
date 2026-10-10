@@ -20,6 +20,7 @@
   },
   "paths": {
     "smoke_root": "/data/queenscamp_smoke",
+    "dehaze_root": "/data/queenscamp_dcp",
     "runs_root": "/data/pibic_runs",
     "results_root": "results"
   },
@@ -34,8 +35,14 @@
     "dirt": {"kind": "queenscamp", "rgb_dir": "PREENCHER_dirt"},
     "smoke_leve": {"kind": "smoke", "visibility_m": 60},
     "smoke_moderada": {"kind": "smoke", "visibility_m": 20},
-    "smoke_densa": {"kind": "smoke", "visibility_m": 6}
+    "smoke_densa": {"kind": "smoke", "visibility_m": 6},
+    "dcp_original": {"kind": "dehaze", "source": "original", "enabled": false,
+                     "_comentario": "controle: efeito do DCP sem fumaça. Baseline da Sprint 8 (NATASHA-17); rodar com --conditions"},
+    "dcp_smoke_leve": {"kind": "dehaze", "source": "smoke_leve", "enabled": false},
+    "dcp_smoke_moderada": {"kind": "dehaze", "source": "smoke_moderada", "enabled": false},
+    "dcp_smoke_densa": {"kind": "dehaze", "source": "smoke_densa", "enabled": false}
   },
+  "dehaze": {"airlight_mode": "sequence", "patch": 15, "omega": 0.95, "t0": 0.1, "top_fraction": 0.001, "radius": 60, "eps": 0.0001},
   "smoke": {
     "atmospheric_light": [0.8, 0.8, 0.8],
     "max_depth_m": 10.0,

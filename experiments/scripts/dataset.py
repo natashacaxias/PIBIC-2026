@@ -116,6 +116,26 @@ def smoke(cfg, sequences):
             print(f"seq {seq} {name}: {meta['n_frames']} frames, t̄={meta['mean_transmission']['mean']:.3f}")
 
 
+def dehaze(cfg, sequences, conditions):
+    """Aplica o Dark Channel Prior às condições de origem (baseline NATASHA-17)."""
+    from lib.queenscamp import condition_rgb_dir
+    from dcp import dehaze_sequence
+    params = dict(cfg['dehaze'])
+    mode = params.pop('airlight_mode')
+    targets = conditions or [c for c, spec in cfg['conditions'].items() if spec['kind'] == 'dehaze']
+    for seq in sequences or cfg['sequences']:
+        for name in targets:
+            cond = cfg['conditions'][name]
+            if cond['kind'] != 'dehaze':
+                raise ValueError(f'{name} não é uma condição de dehazing')
+            out = Path(cfg['paths']['dehaze_root']) / seq / name
+            if (out / 'dcp_meta.json').exists():
+                print(f'já existe: {out}')
+                continue
+            meta = dehaze_sequence(condition_rgb_dir(cfg, seq, cond['source']), out, mode, **params)
+            print(f"seq {seq} {name}: {meta['n_frames']} quadros, A={meta['airlight_rgb_median']}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='command', required=True)
@@ -128,13 +148,19 @@ def main():
     sm = sub.add_parser('smoke')
     sm.add_argument('--config', default=str(ROOT / 'config/experiment.json'))
     sm.add_argument('--sequences', nargs='+')
+    dh = sub.add_parser('dehaze', help='DCP sobre as condições de origem (rodar depois de smoke)')
+    dh.add_argument('--config', default=str(ROOT / 'config/experiment.json'))
+    dh.add_argument('--sequences', nargs='+')
+    dh.add_argument('--conditions', nargs='+')
     args = parser.parse_args()
     if args.command == 'download':
         download(args.dest, args.sequences, args.kind)
     elif args.command == 'inspect':
         inspect(args.seq_dir)
-    else:
+    elif args.command == 'smoke':
         smoke(load_config(args.config), args.sequences)
+    else:
+        dehaze(load_config(args.config), args.sequences, args.conditions)
     return 0
 
 

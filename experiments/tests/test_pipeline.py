@@ -24,7 +24,8 @@ except ImportError:  # evo é dependência do host do laboratório
 def make_config(tmp):
     cfg = json.loads((ROOT / 'config/experiment.json').read_text())
     cfg['dataset']['root'] = str(tmp / 'qc')
-    cfg['paths'].update(smoke_root=str(tmp / 'smoke'), runs_root=str(tmp / 'runs'), results_root=str(tmp / 'res'))
+    cfg['paths'].update(smoke_root=str(tmp / 'smoke'), dehaze_root=str(tmp / 'dcp'), runs_root=str(tmp / 'runs'),
+                        results_root=str(tmp / 'res'))
     cfg['camera'].update(fx=380.0, fy=380.0, cx=320.0, cy=240.0)
     cfg['_camera_ready'] = True
     return cfg
@@ -63,6 +64,16 @@ class LayoutTests(unittest.TestCase):
     def test_full_matrix_size(self):
         runs = queenscamp.expand_runs(self.cfg)
         self.assertEqual(len(runs), 16 * 10 * (5 + 5 + 2 + 5))
+
+    def test_disabled_dehaze_conditions_only_when_requested(self):
+        default = {r['condition'] for r in queenscamp.expand_runs(self.cfg, sequences=['09'])}
+        self.assertFalse(any(c.startswith('dcp_') for c in default))
+        runs = queenscamp.expand_runs(self.cfg, ['dpvo'], ['09'], ['dcp_smoke_densa', 'dcp_original'])
+        self.assertEqual(len(runs), 2 * 5)
+        self.assertEqual(queenscamp.condition_rgb_dir(self.cfg, '09', 'dcp_original'), self.root / 'dcp/09/dcp_original')
+
+    def test_disabled_algorithm_runs_when_requested(self):
+        self.assertEqual(len(queenscamp.expand_runs(self.cfg, ['droidvo'], ['09'], ['original'])), 5)
 
     def test_orbslam2_settings_and_docker_command(self):
         settings = queenscamp.orbslam2_settings(self.cfg)

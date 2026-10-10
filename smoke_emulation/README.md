@@ -16,7 +16,7 @@ I(x) = J(x)·t(x) + A·(1 − t(x)),   t(x) = exp(−β·d(x)),   V = 3,912 / β
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python -m unittest discover -s tests          # 16 testes
+.venv/bin/python -m unittest discover -s tests          # 22 testes
 .venv/bin/python transmission_table.py 1 2 3 5 8
 # sequência inteira (profundidade PNG uint16 em mm → --depth-scale 1000):
 .venv/bin/python emulate_sequence.py --rgb-dir RGB --depth-dir DEPTH --out-dir SAIDA --level moderada
@@ -37,3 +37,12 @@ hazy = apply_smoke(rgb, depth_m, beta_from_visibility(20.0))
 - Validar realismo com métricas sem referência (BRISQUE, contraste, dark channel) contra fumaça real (NATASHA-12).
 
 Justificativa dos níveis: `docs/nota_niveis_fumaca.md`.
+
+## Dehazing (baseline)
+`dcp.py` implementa o Dark Channel Prior com guided filter, com um A por sequência por padrão:
+
+```bash
+.venv/bin/python dcp.py --in-dir SAIDA_COM_FUMACA --out-dir SAIDA_DCP
+```
+
+Em cena interna rasa a estimativa de A sofre viés da cor da cena (ver `docs/leituras/nevoa_sintetica_e_dehazing.md`).

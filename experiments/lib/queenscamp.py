@@ -29,6 +29,8 @@ def condition_rgb_dir(cfg, seq, condition):
         return sequence_dir(cfg, seq) / cond['rgb_dir']
     if cond['kind'] == 'smoke':
         return Path(cfg['paths']['smoke_root']) / seq / condition
+    if cond['kind'] == 'dehaze':
+        return Path(cfg['paths']['dehaze_root']) / seq / condition
     raise ValueError(f'tipo de condição desconhecido: {cond["kind"]}')
 
 
@@ -120,14 +122,18 @@ Viewer.ViewpointF: 500
 
 
 def expand_runs(cfg, algorithms=None, sequences=None, conditions=None):
-    """Produto algoritmo × sequência × condição × semente, só dos algoritmos habilitados."""
+    """Produto algoritmo × sequência × condição × semente.
+
+    Algoritmos e condições com "enabled": false só entram se pedidos explicitamente.
+    """
     runs_root = Path(cfg['paths']['runs_root'])
+    conditions = conditions or [c for c, spec in cfg['conditions'].items() if spec.get('enabled', True)]
     runs = []
     for name, algo in cfg['algorithms'].items():
-        if not algo.get('enabled', True) or (algorithms and name not in algorithms):
+        if (algorithms and name not in algorithms) or (not algorithms and not algo.get('enabled', True)):
             continue
         for seq in sequences or cfg['sequences']:
-            for condition in conditions or cfg['conditions']:
+            for condition in conditions:
                 for seed in range(algo.get('repetitions', cfg['repetitions'])):
                     runs.append({'algorithm': name, 'sequence': seq, 'condition': condition, 'seed': seed,
                                  'run_dir': str(runs_root / name / seq / condition / f'seed{seed}')})

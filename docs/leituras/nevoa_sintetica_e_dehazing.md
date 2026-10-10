@@ -19,6 +19,7 @@ I(x) = J(x)·t(x) + A·(1 − t(x)),  t(x) = exp(−β·d(x)).
 - **Recuperação:** J = (I − A)/max(t, t₀) + A, com **t₀ = 0,1**.
 - **Limitações:** a prior falha quando o objeto é parecido com a luz atmosférica (**parede branca, chão claro**) e quando o modelo físico não vale.
 - **Para o PIBIC:** o QueensCAMP é indoor e tem superfícies claras, onde o DCP tende a "ver" névoa inexistente e escurecer a imagem. Por isso convém aplicar o DCP **também na condição original** como controle, para separar o efeito do dehazing do efeito da fumaça.
+- **Verificado na implementação (`smoke_emulation/dcp.py`, 10/10/2026):** numa cena rasa com fumaça sintética (até 4 m, β = 0,3), o estimador de A escolheu um pixel ainda colorido pela cena, (0,58; 0,83; 0,58) em vez de 0,8 cinza. Com profundidade até 20 m, onde há região opaca, acertou A com erro menor que 0,05. Em ambiente interno, o DCP tende a gerar dominante de cor; isso precisa ser discutido no artigo.
 
 ## Sakaridis, Dai & Van Gool — Foggy Cityscapes (IJCV 2018, arXiv:1708.07819)
 - **Precedente direto da etapa 2:** névoa sintética via Koschmieder sobre profundidade **de estéreo**, com buracos e ruído.

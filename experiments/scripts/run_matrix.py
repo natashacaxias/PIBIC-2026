@@ -82,7 +82,7 @@ def prepare_inputs(cfg, run, algo):
 def docker_command(cfg, run, algo):
     run_dir = run['run_dir']
     inputs = f'{run_dir}/input'
-    mounts = {cfg['dataset']['root'], cfg['paths']['smoke_root']}
+    mounts = {cfg['dataset']['root'], cfg['paths']['smoke_root'], cfg['paths']['dehaze_root']}
     cmd = ['docker', 'run', '--rm', '--gpus', 'all', '--ipc=host', '--user', f'{os.getuid()}:{os.getgid()}']
     for path in sorted(mounts):
         cmd += ['-v', f'{path}:{path}:ro']
@@ -105,10 +105,12 @@ def execute(cfg, run, algo, timeout):
     run_dir = Path(run['run_dir'])
     frames = prepare_inputs(cfg, run, algo)
     cmd = docker_command(cfg, run, algo)
-    smoke_meta = None
-    if cfg['conditions'][run['condition']]['kind'] == 'smoke':
-        meta_file = Path(cfg['paths']['smoke_root']) / run['sequence'] / run['condition'] / 'smoke_meta.json'
-        smoke_meta = json.loads(meta_file.read_text()) if meta_file.exists() else None
+    condition_meta = None
+    kind = cfg['conditions'][run['condition']]['kind']
+    if kind in ('smoke', 'dehaze'):
+        root, name = (('smoke_root', 'smoke_meta.json') if kind == 'smoke' else ('dehaze_root', 'dcp_meta.json'))
+        meta_file = Path(cfg['paths'][root]) / run['sequence'] / run['condition'] / name
+        condition_meta = json.loads(meta_file.read_text()) if meta_file.exists() else None
     monitor = GpuMonitor()
     monitor.start()
     started, t0 = datetime.now(timezone.utc).isoformat(), time.monotonic()
@@ -125,7 +127,7 @@ def execute(cfg, run, algo, timeout):
     meta = dict(run, image=algo['image'], status=status, returncode=returncode, wall_s=round(wall, 2),
                 peak_gpu_mib_host=monitor.stop(), n_frames=len(frames), started_at=started,
                 finished_at=datetime.now(timezone.utc).isoformat(), command=shlex.join(cmd),
-                repo_sha=git_sha(), smoke=smoke_meta)
+                repo_sha=git_sha(), condition_meta=condition_meta)
     algo_meta = run_dir / 'algo_meta.json'
     if algo_meta.exists():
         meta['algo'] = json.loads(algo_meta.read_text())
