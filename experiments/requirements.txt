@@ -1,0 +1,5 @@
+# Ambiente do host (fora dos containers): preparação, orquestração e avaliação.
+evo==1.31.1
+numpy>=1.24,<2.3
+opencv-python-headless>=4.8
+gdown>=5.2
