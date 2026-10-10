@@ -21,8 +21,12 @@ degradação percentual de ATE/RPE em relação à própria condição original?
 | Arquitetura da revisão (`arquitetura_revisao_bibliografica_vo_slam.md`) | Pronta; 8 temas T1–T8 |
 | Ferramenta `literature_review/` v0.3 | Coleta Crossref/arXiv, dedup, fila de triagem, RIS/XLSX; 30 testes OK |
 | Corpus bibliográfico | 3.016 candidatos (busca completa em 20/09 + atualização em 10/10); 0 triados. 1.828 têm VO/SLAM/localização no título |
-| Módulo `smoke_emulation/` | Protótipo do modelo de Koschmieder com 12 testes |
-| Jira NATASHA | 5 épicos e 16 tarefas; sprints 1–4 com datas já passadas e ainda “futuras” |
+| Módulo `smoke_emulation/` | Koschmieder + preenchimento de buracos + CLI por sequência; 16 testes |
+| Fichamentos (Sprints 1–2) | 15 referências em `docs/leituras/` + tabela comparativa |
+| Experimentos | `experiments/` pronto para a máquina do laboratório (Docker, matriz, métricas); não executado |
+| Jira NATASHA | 5 épicos, 21 tarefas, 14 subtarefas; sprints 1–4 com datas já passadas e ainda “futuras” |
+
+> Atualizado em 10/10/2026 (fim do dia): sprints 1–4 executadas no que não depende da GPU nem do dataset. Ver seção 5.
 
 ## 3. Primeiros passos (próximas 4 semanas)
 
@@ -68,10 +72,12 @@ típicas do QueensCAMP (1–5 m) é:
 | moderada | 20 | 0,82 | 0,56 | 0,38 |
 | densa | 6 | 0,52 | 0,14 | 0,04 |
 
-(saída de `smoke_emulation/transmission_table.py`). A fumaça **leve** quase não altera a
-imagem nessas distâncias. Opções: (a) manter V e relatar como limitação; (b) definir os
-níveis pela **transmissão média da cena** ou pela queda de contraste; (c) reescalar V
-para a geometria indoor. O importante é justificar e validar com os frames do SubT-MRS.
+(saída de `smoke_emulation/transmission_table.py`).
+
+**Correção (nota técnica NATASHA-40):** a transmissão *média* numa sala (0,5–6 m) fica em
+0,81 / 0,56 / 0,20. A fumaça leve é fraca, mas visível, e os três níveis cobrem bem o
+intervalo. Recomendação: manter V = 60/20/6 m e relatar a transmissão média por sequência.
+Ver `docs/nota_niveis_fumaca.md`.
 
 ### 4.4 Detalhes de implementação da emulação
 - Buracos do sensor de profundidade (d = 0) viram “janelas” sem fumaça; o protótipo
@@ -97,11 +103,39 @@ e spike de compatibilidade antes da Sprint de instalação.
 - A referência **[22] (INPE/BDQueimadas)** não é citada no texto; a frase sobre
   queimadas sazonais cita [8] (SubT-MRS) e provavelmente deveria citar [22].
 
-### 4.7 Cronograma no Jira [discutir]
+### 4.7 Originalidade: trabalhos de 2026 [discutir — urgente]
+O **SLAM Adversarial Lab** (IROS 2026) já implementa névoa por Koschmieder com β = 3,912/V
+sobre a profundidade do dataset e avalia ORB-SLAM3 e DROID-SLAM. **"Failure or Drift?"**
+(ECCV-W 2026) e **Kumar et al. (2026)** comparam VO/SLAM clássico e aprendido sob névoa ou
+"dust haze". A originalidade precisa ser reposicionada (fumaça calibrada com fumaça real,
+falhas de lente + fumaça, degradação relativa e gap de domínio, piloto amazônico). Também
+vale avaliar o reuso do SAL. Ver `docs/trabalhos_relacionados.md`, seção 5.
+
+### 4.8 Critério de aptidão e escala do TartanVO [discutir]
+- No artigo do QueensCAMP, o ATE **original** do TartanVO fica entre 0,38 e 1,13 m: nenhuma
+  sequência fica abaixo de 0,3 m. O critério absoluto da proposta reprova todos os métodos
+  antes de qualquer degradação. Proposta de critério relativo em `docs/protocolo_experimental.md` §5.
+- O TartanVO só tem escala com a **norma de cada passo vinda do ground truth** (código oficial).
+  A avaliação calcula essa variante para todos os monoculares, para ninguém ser favorecido.
+
+### 4.9 Cronograma no Jira [discutir]
 As sprints 1–4 (jun–out/2026) ainda constam como futuras e nenhuma tarefa saiu de
 “A fazer”. Vale replanejar as datas com o orientador a partir do início efetivo da bolsa.
 
-## 5. Leituras complementares sugeridas
+## 5. Execução das Sprints 1–4 (10/10/2026)
+| Tarefa | Entrega | Estado |
+|---|---|---|
+| NATASHA-6 / 27–32 | Fichamentos de fundamentos, ORB-SLAM2/3, DSO, TartanVO, DROID-SLAM, DPVO + tabela comparativa | entregue, aguarda revisão |
+| NATASHA-7 / 33–37 | Surveys, Bujanca, QueensCAMP, SubT-MRS; critérios + pré-triagem (`screening.py`); Trabalhos Relacionados v0.1 | entregue; **triagem humana pendente** |
+| NATASHA-8 / 38–40 | Koschmieder, DCP, Sakaridis, Xu, SAL; métricas; nota dos níveis de fumaça | entregue, aguarda revisão |
+| NATASHA-24 | `docs/datasets.md` + `dataset.py download/inspect` | preparado; **download e inspeção na máquina do lab** |
+| NATASHA-9 / 25 | `docs/ambiente.md`, Dockerfiles, `check_gpu.sh` | preparado; **execução na máquina do lab** |
+| NATASHA-10 | wrappers + patches ORB-SLAM2, matriz, avaliação | preparado; **validação depende da GPU e dos dados** |
+| NATASHA-11 | módulo de fumaça completo com CLI | entregue; falta rodar em dados reais |
+| NATASHA-26 | `docs/protocolo_experimental.md` | rascunho para aprovação |
+| NATASHA-23 | pauta com o orientador | **depende da Natasha** |
+
+## 6. Leituras complementares sugeridas
 
 Verificar antes de citar:
 - Sturm et al., *A benchmark for the evaluation of RGB-D SLAM systems*, IROS 2012 — define ATE/RPE.

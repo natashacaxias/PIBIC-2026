@@ -12,11 +12,16 @@ Koschmieder, com um dataset piloto coletado em Manaus.
 
 | Pasta/arquivo | Conteúdo |
 |---|---|
-| `docs/plano_inicial.md` | Resumo da proposta, primeiros passos, sugestões e riscos |
-| `docs/leituras/` | Lista de leitura e fichamentos |
+| `docs/plano_inicial.md` | Resumo da proposta, primeiros passos, sugestões, riscos e estado das sprints |
+| `docs/leituras/` | Fichamentos (15 referências) e tabela comparativa dos métodos |
+| `docs/trabalhos_relacionados.md` | Rascunho de Trabalhos Relacionados (inclui concorrentes de 2026) |
+| `docs/protocolo_experimental.md` | Protocolo dos experimentos (rascunho para aprovação) |
+| `docs/datasets.md`, `docs/ambiente.md` | QueensCAMP/SubT-MRS e configuração da máquina do laboratório |
+| `docs/criterios_triagem.md`, `docs/nota_niveis_fumaca.md` | Critérios da revisão; justificativa dos níveis de fumaça |
+| `experiments/` | Pipeline para a máquina do laboratório: Docker por algoritmo, matriz de execuções, avaliação |
 | `arquitetura_revisao_bibliografica_vo_slam.md` | Arquitetura da revisão bibliográfica (8 temas) |
-| `literature_review/` | Coleta, deduplicação e triagem auditáveis (Crossref/arXiv) |
-| `smoke_emulation/` | Emulação de fumaça/névoa (Koschmieder) |
+| `literature_review/` | Coleta, deduplicação, pré-triagem por regras e triagem auditáveis (Crossref/arXiv) |
+| `smoke_emulation/` | Emulação de fumaça (Koschmieder) por sequência, com metadados |
 | `vo_slam_literature_review.schema.json`, `prompt_extracao_revisao_vo_slam.txt` | Schema e prompt de extração |
 
 Dados brutos, corpus SQLite, PDFs, saídas e ambientes virtuais **não** são versionados
