@@ -69,3 +69,13 @@ Estado científico permanece: 9 candidatos, 9 triagens pendentes, 1 pacote prepa
 0 extrações semânticas validadas. Não houve nova busca nem inclusão científica neste
 incremento. A geração semântica por LLM e a importação de decisões feitas no XLSX
 ainda não estão conectadas.
+
+## Incremento 0.4 — pré-triagem por regras (10/10/2026)
+
+- `screening.py suggest` aplica os critérios de `docs/criterios_triagem.md` (expressões regulares
+  no título/resumo, com pesos) e grava `exports/triagem_sugerida.csv`. **Sugestões, não decisões.**
+- `screening.py apply CSV` grava só as linhas com `decisao_humana` preenchida, com justificativa
+  obrigatória, pela mesma função `record_review` usada por `review.py review`.
+- Corpus em 10/10: 3.016 candidatos (busca completa de 20/09 + atualização de 10/10, +8).
+  Sugestões: 674 INCLUDE, 1.297 MAYBE, 1.045 EXCLUDE; núcleo prioritário (VO/SLAM + atmosférico): 51.
+- Testes: 33 aprovados.

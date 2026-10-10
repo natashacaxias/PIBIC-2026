@@ -315,6 +315,20 @@ def run(args):
     return 1 if summary['errors'] else 0
 
 
+REVIEW_STATUS = {'INCLUDE':'SCREEN_INCLUDED','MAYBE':'SCREEN_MAYBE','EXCLUDE':'SCREEN_EXCLUDED'}
+
+
+def record_review(db, paper_id, decision, reason):
+    """Grava uma decisão humana; o chamador controla a transação."""
+    pid = int(str(paper_id).removeprefix('P'))
+    if decision not in REVIEW_STATUS:
+        raise ValueError(f'Decisão inválida: {decision}')
+    if not reason.strip() or not db.execute('SELECT 1 FROM papers WHERE id=?',(pid,)).fetchone():
+        raise ValueError('Artigo inexistente ou justificativa vazia')
+    db.execute('INSERT OR REPLACE INTO reviews VALUES(?,?,?,?)',(pid,decision,reason,now()))
+    db.execute('UPDATE papers SET status=? WHERE id=?',(REVIEW_STATUS[decision],pid))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--data',type=Path,default=ROOT/'data')
@@ -347,12 +361,8 @@ def main():
                 from workbook_export import export_xlsx, DEFAULT_OUTPUT
                 export_xlsx(db,args.data,args.xlsx_output or DEFAULT_OUTPUT,args.previews)
         else:
-            pid = int(args.paper_id.removeprefix('P'))
-            if not args.reason.strip() or not db.execute('SELECT 1 FROM papers WHERE id=?',(pid,)).fetchone():
-                raise ValueError('Artigo inexistente ou justificativa vazia')
             with db:
-                db.execute('INSERT OR REPLACE INTO reviews VALUES(?,?,?,?)',(pid,args.decision,args.reason,now()))
-                db.execute('UPDATE papers SET status=? WHERE id=?',({'INCLUDE':'SCREEN_INCLUDED','MAYBE':'SCREEN_MAYBE','EXCLUDE':'SCREEN_EXCLUDED'}[args.decision],pid))
+                record_review(db,args.paper_id,args.decision,args.reason)
     finally:
         db.close()
     return 0
