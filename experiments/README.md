@@ -11,13 +11,14 @@ experiments/
 │   ├── dataset.py              # download | inspect | smoke | dehaze
 │   ├── run_matrix.py           # executa a matriz (retomável)
 │   ├── evaluate.py             # metrics.csv + summary.csv
-│   └── stats_analysis.py       # Wilcoxon + Bonferroni + bootstrap + critério de robustez
+│   ├── stats_analysis.py       # Wilcoxon + Bonferroni + bootstrap + critério de robustez
+│   └── figures.py              # mapa de degradação, rastreamento, erro cumulativo, trajetórias
 ├── algorithms/
 │   ├── orbslam2/               # Ubuntu 18.04; patches: sem loop closure, TUM monocular, runner
 │   ├── tartanvo/               # CUDA 12.8 + PyTorch 2.7 + cupy
 │   ├── dpvo/                   # CUDA 12.8 + PyTorch 2.7, extensões compiladas para sm_120
 │   └── droidslam/              # reserva
-└── tests/                      # 17 testes, rodam sem GPU
+└── tests/                      # 18 testes, rodam sem GPU
 ```
 
 ## Ordem de execução
@@ -62,6 +63,7 @@ bash scripts/check_gpu.sh
 # 8) métricas e estatística
 .venv/bin/python scripts/evaluate.py
 .venv/bin/python scripts/stats_analysis.py      # results/stats_report.md
+.venv/bin/python scripts/figures.py             # results/figures/*.pdf|png
 ```
 
 ## Saídas de cada execução
