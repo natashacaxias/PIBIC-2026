@@ -16,7 +16,7 @@ I(x) = J(x)·t(x) + A·(1 − t(x)),   t(x) = exp(−β·d(x)),   V = 3,912 / β
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python -m unittest discover -s tests          # 22 testes
+.venv/bin/python -m unittest discover -s tests          # 25 testes
 .venv/bin/python transmission_table.py 1 2 3 5 8
 # sequência inteira (profundidade PNG uint16 em mm → --depth-scale 1000):
 .venv/bin/python emulate_sequence.py --rgb-dir RGB --depth-dir DEPTH --out-dir SAIDA --level moderada
@@ -37,6 +37,14 @@ hazy = apply_smoke(rgb, depth_m, beta_from_visibility(20.0))
 - Validar realismo com métricas sem referência (BRISQUE, contraste, dark channel) contra fumaça real (NATASHA-12).
 
 Justificativa dos níveis: `docs/nota_niveis_fumaca.md`.
+
+## Validação contra fumaça real (NATASHA-12)
+`validate_smoke.py` compara a fumaça sintética com quadros reais (ex.: SubT-MRS "Smoke Room") por métricas **sem referência** (contraste RMS, dark channel, densidade de bordas, entropia, pontos ORB e BRISQUE opcional via `piq`), com teste KS e distância de Wasserstein. Calcula o SSIM só contra o quadro limpo correspondente:
+
+```bash
+.venv/bin/python validate_smoke.py --synthetic FUMACA_SINT --real FUMACA_REAL --clean LIMPO --out validacao \
+    --real-center-crop 0.6 --size 640 480
+```
 
 ## Dehazing (baseline)
 `dcp.py` implementa o Dark Channel Prior com guided filter, com um A por sequência por padrão:
