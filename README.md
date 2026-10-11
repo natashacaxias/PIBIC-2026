@@ -12,6 +12,7 @@ Koschmieder, com um dataset piloto coletado em Manaus.
 
 | Pasta/arquivo | Conteúdo |
 |---|---|
+| **`docs/roteiro_laboratorio.md`** | **Passo a passo para rodar os experimentos na máquina do laboratório** |
 | `docs/plano_inicial.md` | Resumo da proposta, primeiros passos, sugestões, riscos e estado das sprints |
 | `docs/leituras/` | Fichamentos (15 referências) e tabela comparativa dos métodos |
 | `docs/trabalhos_relacionados.md` | Rascunho de Trabalhos Relacionados (inclui concorrentes de 2026) |
