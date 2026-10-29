@@ -1,12 +1,12 @@
 # Datasets
 
-Jira: NATASHA-24. Levantado em 10/10/2026 a partir dos artigos, do site e do código. **Nada foi baixado ainda**: o download e a inspeção acontecem na máquina do laboratório (`experiments/scripts/01_download_queenscamp.sh`).
+Jira: NATASHA-24. Levantado em 10/10/2026 a partir dos artigos, do site e do código. As 16 sequências do QueensCAMP (*Full*) foram baixadas, verificadas e extraídas em 29/10/2026 no servidor do laboratório (seção "Registro local"). O SubT-MRS ainda não foi baixado.
 
 ## QueensCAMP
 - **Site:** https://larocs.github.io/queenscamp-dataset · **Código:** https://github.com/larocs/queenscamp-dataset (MIT) · **Artigo:** arXiv:2410.12520 (ICAR 2025)
 - **Hospedagem:** Google Drive, um arquivo por sequência.
 
-| Seq | Full (GB) | Bag (GB) | Duração (s) | Imagens | Dinâmica | Pouca luz |
+| Seq | Full (GiB) | Bag (GB) | Duração (s) | Imagens | Dinâmica | Pouca luz |
 |---|---|---|---|---|---|---|
 | 01 | 6,0 | 0,5 | 119,6 | 1732 | ✓ | |
 | 02 | 8,1 | 0,7 | 166,1 | 2449 | | |
@@ -27,16 +27,22 @@ Jira: NATASHA-24. Levantado em 10/10/2026 a partir dos artigos, do site e do có
 | **Total** | **~97** | **~8** | | 28.523 | | |
 
 - **Full Sequence:** imagens + profundidade + ground truth **já com as 6 falhas**. **Bag:** rosbag bruto, que precisa de `convert_bag_to_files.py` (ROS 1, `rosbag`, `cv_bridge`).
-- **Recomendação:** usar **Full Sequence** (dispensa ROS). São ~97 GB, então conferir o espaço em disco da estação.
-- **Formato esperado** (pelo código de conversão): `images/0000.png…` (RGB 640×480 depois do redimensionamento), `depths/0000.png…` (uint16 alinhado ao RGB), arquivo de timestamps `id t` e trajetória TUM.
+- **Recomendação:** usar **Full Sequence** (dispensa ROS). São ~97 GiB, então conferir o espaço em disco da estação.
+- **Formato real** (conferido nas 16 sequências): `NN/images/0000.png…` (RGB 640×480), `NN/depth/0000.png…` (uint16 alinhado ao RGB), uma pasta por falha (`underexposure`, `overexposure`, `breakage`, `wet`, `condensation`, `dirt`; `breakage`, `condensation`, `dirt` e `wet` com 4 canais RGBA), `times.txt` (`id t`) e `traj.txt` (TUM).
 
-### A confirmar na primeira inspeção (checklist)
-- [ ] Estrutura de pastas e nomes reais dentro do Full Sequence.
-- [ ] **Escala da profundidade:** esperada em mm (1000/m, padrão RealSense). Conferir a mediana de um frame: deve ficar entre 1 e 5 m numa sala de 5 × 7,5 m.
-- [ ] Intrínsecos após o redimensionamento para 640×480 (arquivos "Camera info" RGB e Depth no site).
-- [ ] Fração de buracos (profundidade = 0) por frame.
-- [ ] Alinhamento entre os timestamps das imagens e do ground truth.
-- [ ] Nomes das pastas de cada falha.
+### Checklist da primeira inspeção
+- [x] Estrutura de pastas e nomes reais dentro do Full Sequence (acima; as 16 têm as 8 pastas de imagens, sem aviso).
+- [x] **Escala da profundidade:** milímetros (`depth_scale = 1000`). Na seq. 09 a mediana dos pixels válidos é 0,607 m; a prova é o ORB-SLAM2 RGB-D reproduzir o ATE do artigo (0,151 m com Sim3 contra 0,15 m).
+- [ ] Intrínsecos: `rgb_camera_info.txt` e `depth_camera_info.txt` do site já estão em 640×480 e foram para o `config/experiment.json`. Falta conferir `fx` = 465,6 e `fy` = 620,9 (razão 4/3) com a documentação do dataset, por causa do viés de escala de 13% do RGB-D.
+- [ ] Fração de buracos (profundidade = 0): medida só na seq. 09 (49%).
+- [x] Alinhamento entre os timestamps das imagens e do ground truth: `times.txt` e `traj.txt` têm os mesmos timestamps (diferença máxima 0 s) nas 16 sequências.
+- [x] Nomes das pastas de cada falha (acima).
+
+### Registro local (29/10/2026)
+- **Zips:** `/data/queenscamp_raw/NN.zip` (16 arquivos, 96,8 GiB). O sha256, o tamanho e a data de cada download estão em `/data/queenscamp_raw/downloads.json`. O Drive não publica hash, então ele registra o que foi baixado e não é comparado com a origem. Os tamanhos reais conferem com a coluna *Full* acima.
+- **Extraído:** `/data/queenscamp/NN` (104 GiB), sem aviso de layout; `/data/queenscamp_raw/extract_report.json` guarda o resultado de cada sequência.
+- **Verificação antes de extrair:** caminhos seguros, espaço em disco, CRC de todos os membros e layout esperado; extração numa pasta temporária seguida de rename.
+- **Dados fora do git.** Os zips podem ser apagados depois que a matriz terminar, se faltar espaço: o `dataset.py download` baixa de novo.
 
 ## SubT-MRS (apenas para validar a fumaça)
 - **Site:** https://superodometry.com/datasets · **Artigo:** CVPR 2024, arXiv:2307.07607

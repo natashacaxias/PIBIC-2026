@@ -87,7 +87,7 @@ Abrir alguns quadros dos três níveis e anotar a transmissão média que aparec
 
 ## Depois que o piloto funcionar
 ```bash
-.venv/bin/python scripts/dataset.py download --dest /data/queenscamp_raw --kind full   # ~93 GB restantes
+.venv/bin/python scripts/dataset.py download --dest /data/queenscamp_raw --kind full   # ~93 GiB restantes (feito em 29/10, ver datasets.md)
 .venv/bin/python scripts/dataset.py smoke
 # no tmux, GPU e CPU em paralelo (~13 h de GPU e ~53 h de CPU):
 .venv/bin/python scripts/run_matrix.py --algorithms dpvo tartanvo > gpu.log 2>&1
