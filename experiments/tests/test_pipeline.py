@@ -37,11 +37,11 @@ class LayoutTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.cfg = make_config(self.root)
         seq = self.root / 'qc' / '09'
-        for sub in ('images', 'depths'):
+        for sub in ('images', self.cfg['dataset']['depth_dir']):
             (seq / sub).mkdir(parents=True)
             for i in range(3):
                 (seq / sub / f'{i:04d}.png').write_bytes(b'')
-        (seq / 'timestamps.txt').write_text('0000 100.0\n0001 100.066\n0002 100.133\n')
+        (seq / self.cfg['dataset']['timestamps_file']).write_text('0000 100.0\n0001 100.066\n0002 100.133\n')
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -49,7 +49,7 @@ class LayoutTests(unittest.TestCase):
     def test_frame_list_uses_dataset_timestamps(self):
         frames = queenscamp.frame_list(self.cfg, '09', 'original')
         self.assertEqual([round(t, 3) for t, _, _ in frames], [100.0, 100.066, 100.133])
-        self.assertTrue(str(frames[0][2]).endswith('depths/0000.png'))
+        self.assertTrue(str(frames[0][2]).endswith(self.cfg['dataset']['depth_dir'] + '/0000.png'))
 
     def test_smoke_condition_points_to_generated_dir(self):
         self.assertEqual(queenscamp.condition_rgb_dir(self.cfg, '09', 'smoke_densa'), self.root / 'smoke/09/smoke_densa')

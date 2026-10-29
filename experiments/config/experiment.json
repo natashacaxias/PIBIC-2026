@@ -3,20 +3,20 @@
   "dataset": {
     "root": "/data/queenscamp",
     "sequence_pattern": "{seq}",
-    "depth_dir": "depths",
-    "timestamps_file": "timestamps.txt",
-    "groundtruth_file": "groundtruth.txt",
+    "depth_dir": "depth",
+    "timestamps_file": "times.txt",
+    "groundtruth_file": "traj.txt",
     "depth_scale": 1000.0,
     "fps": 15
   },
   "camera": {
-    "fx": null,
-    "fy": null,
-    "cx": null,
-    "cy": null,
+    "fx": 465.63427734375,
+    "fy": 620.8928493923611,
+    "cx": 323.65799967447913,
+    "cy": 234.40109592013889,
     "width": 640,
     "height": 480,
-    "_comentario": "PREENCHER com os intrínsecos do arquivo 'Camera info' RGB do site, escalados para 640x480"
+    "_comentario": "K do rgb_camera_info.txt do site, que já está em 640x480 (resize anisotrópico já aplicado: fx*3 e fy/0,444 dão ~1397). NÃO reescalar de novo."
   },
   "paths": {
     "smoke_root": "/data/queenscamp_smoke",
@@ -27,12 +27,12 @@
   "sequences": ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16"],
   "conditions": {
     "original": {"kind": "queenscamp", "rgb_dir": "images"},
-    "underexposure": {"kind": "queenscamp", "rgb_dir": "PREENCHER_underexposure"},
-    "overexposure": {"kind": "queenscamp", "rgb_dir": "PREENCHER_overexposure"},
-    "breakage": {"kind": "queenscamp", "rgb_dir": "PREENCHER_breakage"},
-    "wet": {"kind": "queenscamp", "rgb_dir": "PREENCHER_wet"},
-    "condensation": {"kind": "queenscamp", "rgb_dir": "PREENCHER_condensation"},
-    "dirt": {"kind": "queenscamp", "rgb_dir": "PREENCHER_dirt"},
+    "underexposure": {"kind": "queenscamp", "rgb_dir": "underexposure"},
+    "overexposure": {"kind": "queenscamp", "rgb_dir": "overexposure"},
+    "breakage": {"kind": "queenscamp", "rgb_dir": "breakage"},
+    "wet": {"kind": "queenscamp", "rgb_dir": "wet"},
+    "condensation": {"kind": "queenscamp", "rgb_dir": "condensation"},
+    "dirt": {"kind": "queenscamp", "rgb_dir": "dirt"},
     "smoke_leve": {"kind": "smoke", "visibility_m": 60},
     "smoke_moderada": {"kind": "smoke", "visibility_m": 20},
     "smoke_densa": {"kind": "smoke", "visibility_m": 6},
