@@ -16,6 +16,15 @@ RUN pip3 install "numpy==1.26.4" "cupy-cuda12x>=13.4,<14" opencv-python-headless
 
 RUN git clone -b python3 https://github.com/castacks/tartanvo.git /opt/tartanvo \
     && cd /opt/tartanvo && git checkout ec2ecc38b590ff27b76cc7818cf198d6420dce4b
+# cupy >= 13 removeu cupy.cuda.compile_with_cache, que a correlação do PWC-Net usa.
+# RawModule faz o mesmo; o lru_cache evita recompilar o kernel a cada quadro (o original memoizava com cupy.util.memoize).
+RUN cd /opt/tartanvo/Network/PWC \
+    && sed -i 's/return cupy\.cuda\.compile_with_cache(strKernel)\.get_function(strFunction)/return cupy.RawModule(code=strKernel).get_function(strFunction)/' correlation.py \
+    && sed -i 's/^# @cupy\.util\.memoize(for_each_device=True)$/@functools.lru_cache(maxsize=None)/' correlation.py \
+    && sed -i '1i import functools' correlation.py \
+    && grep -n 'RawModule\|lru_cache\|^import functools' correlation.py
+# scipy >= 1.6 renomeou Rotation.as_dcm/from_dcm para as_matrix/from_matrix.
+RUN find /opt/tartanvo -name '*.py' -exec sed -i 's/\.as_dcm()/.as_matrix()/g; s/\.from_dcm(/.from_matrix(/g' {} +
 RUN mkdir -p /opt/tartanvo/models \
     && wget -q https://cmu.box.com/shared/static/t1a5u4x6dxohl89104dyrsiz42mvq2sz.pkl -O /opt/tartanvo/models/tartanvo_1914.pkl
 
