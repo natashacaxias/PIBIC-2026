@@ -132,7 +132,11 @@ class MetricTests(unittest.TestCase):
 
     def test_rgbd_uses_se3_so_scale_error_counts(self):
         est = trajectory(2.0 * self.gt_positions, np.linspace(0, 2 * np.pi, 60))
-        self.assertGreater(evaluate.trajectory_metrics(self.ref, est, monocular=False, delta=15)['ate_m'], 0.1)
+        m = evaluate.trajectory_metrics(self.ref, est, monocular=False, delta=15)
+        self.assertGreater(m['ate_m'], 0.1)
+        # o diagnóstico Sim(3) recupera o erro de escala: ATE ~ 0 e escala 0,5 (estimativa 2x maior que o GT)
+        self.assertLess(m['ate_sim3_m'], 1e-6)
+        self.assertAlmostEqual(m['sim3_scale'], 0.5, places=3)
 
     def test_summary_degradation_relative_to_original(self):
         rows = [dict(algorithm='a', sequence='09', condition=c, status='ok', ate_m=v, tracked_fraction=1.0,

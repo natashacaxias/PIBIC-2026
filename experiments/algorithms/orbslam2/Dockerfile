@@ -15,8 +15,18 @@ RUN git clone --depth 1 --branch v0.5 https://github.com/stevenlovegrove/Pangoli
     && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF \
     && make -j"$(nproc)" && make install && ldconfig
 
-RUN git clone https://github.com/raulmur/ORB_SLAM2.git /opt/ORB_SLAM2 \
-    && cd /opt/ORB_SLAM2 && git checkout f2e6f51cdc8d067655d90a78c06261378e07e8f3
+# O `git clone` do ORB_SLAM2 trava no pacote grande (vocabulário) em algumas redes; o tarball do commit fixo é
+# equivalente e é repetido do zero até vir íntegro (o codeload não aceita retomada).
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+RUN set -e; mkdir -p /opt/ORB_SLAM2; \
+    for i in 1 2 3 4 5 6 7 8; do \
+        rm -f /tmp/orb.tgz; \
+        curl -fsSL --max-time 240 --connect-timeout 15 -o /tmp/orb.tgz \
+            https://codeload.github.com/raulmur/ORB_SLAM2/tar.gz/f2e6f51cdc8d067655d90a78c06261378e07e8f3 \
+            && gzip -t /tmp/orb.tgz && break; \
+        echo "download incompleto (tentativa $i)"; \
+    done; \
+    gzip -t /tmp/orb.tgz && tar -xzf /tmp/orb.tgz -C /opt/ORB_SLAM2 --strip-components=1 && rm /tmp/orb.tgz
 COPY patch_orbslam2.sh queenscamp_runner.cc /tmp/
 RUN bash /tmp/patch_orbslam2.sh /opt/ORB_SLAM2 /tmp/queenscamp_runner.cc \
     && cd /opt/ORB_SLAM2 && bash build.sh \

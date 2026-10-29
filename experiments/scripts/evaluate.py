@@ -86,6 +86,8 @@ def trajectory_metrics(ref, est, monocular, delta, primary='sim3'):
     else:
         out['ate_m'], aligned = ate(ref, est, correct_scale=False)
         out['ate_metric'] = 'se3'
+        # diagnóstico: uma escala Sim(3) longe de 1 num sensor métrico (RGB-D) aponta erro de depth_scale ou de calibração
+        out['ate_sim3_m'], _, out['sim3_scale'] = ate(ref, est, correct_scale=True, return_scale=True)
     out['rpe_trans_m'], out['rpe_trans_pct'], out['rpe_rot_deg'] = rpe(ref, aligned, min(delta, ref.num_poses - 1))
     return out
 
