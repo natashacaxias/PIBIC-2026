@@ -12,7 +12,7 @@ docker run --rm --gpus all nvidia/cuda:12.8.1-base-ubuntu22.04 nvidia-smi -L || 
   echo "Docker sem GPU: instale o nvidia-container-toolkit e reinicie o Docker"; exit 1; }
 
 echo; echo "== PyTorch dentro de ${IMAGE}"
-docker run --rm --gpus all --entrypoint python3 "${IMAGE}" - <<'EOF' || { echo "imagem ${IMAGE} indisponível ou sem suporte"; exit 1; }
+docker run -i --rm --gpus all --entrypoint python3 "${IMAGE}" - <<'EOF' || { echo "imagem ${IMAGE} indisponível ou sem suporte"; exit 1; }
 import torch
 print("torch", torch.__version__, "cuda", torch.version.cuda)
 print("arquiteturas compiladas:", torch.cuda.get_arch_list())

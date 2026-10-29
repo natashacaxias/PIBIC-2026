@@ -66,6 +66,18 @@ class GpuMonitor(threading.Thread):
         return max(0, self.peak - self.baseline)
 
 
+RESOURCE_DEFAULTS = {'memory': '24g', 'cpus': 8, 'pids': 1024, 'min_free_gpu_mib': 10000}
+
+
+def gpu_free_mib():
+    try:
+        out = subprocess.run(['nvidia-smi', '--query-gpu=memory.free', '--format=csv,noheader,nounits', '-i', '0'],
+                             capture_output=True, text=True, timeout=5).stdout
+        return int(out.strip().splitlines()[0])
+    except (OSError, ValueError, IndexError, subprocess.SubprocessError):
+        return None
+
+
 def prepare_inputs(cfg, run, algo):
     run_dir = Path(run['run_dir'])
     inputs = run_dir / 'input'
@@ -84,6 +96,10 @@ def docker_command(cfg, run, algo):
     inputs = f'{run_dir}/input'
     mounts = {cfg['dataset']['root'], cfg['paths']['smoke_root'], cfg['paths']['dehaze_root']}
     cmd = ['docker', 'run', '--rm', '--gpus', 'all', '--ipc=host', '--user', f'{os.getuid()}:{os.getgid()}']
+    # Servidor compartilhado: teto de RAM (sem swap), CPU e processos por container.
+    limits = {**RESOURCE_DEFAULTS, **cfg.get('resources', {})}
+    cmd += ['--memory', limits['memory'], '--memory-swap', limits['memory'], '--cpus', str(limits['cpus']),
+            '--pids-limit', str(limits['pids'])]
     for path in sorted(mounts):
         cmd += ['-v', f'{path}:{path}:ro']
     cmd += ['-v', f'{run_dir}:{run_dir}', '-e', 'HOME=/tmp', '-e', f'SEED={run["seed"]}']
@@ -167,7 +183,14 @@ def main():
     if not cfg['_camera_ready']:
         print('Preencha fx, fy, cx, cy em config/experiment.json antes de executar.', file=sys.stderr)
         return 2
+    min_free = {**RESOURCE_DEFAULTS, **cfg.get('resources', {})}['min_free_gpu_mib']
     for i, run in enumerate(pending[:args.max_runs] if args.max_runs else pending, 1):
+        if cfg['algorithms'][run['algorithm']]['kind'] != 'orbslam2':
+            free = gpu_free_mib()
+            if free is not None and free < min_free:
+                print(f'GPU com só {free} MiB livres (mínimo {min_free}): outro processo a está usando. '
+                      'Parando; rode de novo quando liberar (execuções concluídas são puladas).', file=sys.stderr)
+                return 3
         meta = execute(cfg, run, cfg['algorithms'][run['algorithm']], cfg['timeout_s'])
         print(f"[{i}/{len(pending)}] {run['algorithm']} {run['sequence']} {run['condition']} seed{run['seed']}: "
               f"{meta['status']} ({meta['wall_s']} s)", flush=True)
