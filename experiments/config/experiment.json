@@ -50,12 +50,26 @@
   },
   "repetitions": 5,
   "timeout_s": 3600,
+  "resources": {
+    "memory": "8g",
+    "cpus": 8,
+    "pids": 1024,
+    "min_free_gpu_mib": 10000,
+    "max_gpu_temp_c": 83,
+    "max_cpu_temp_c": 90,
+    "min_mem_available_gb": 12,
+    "min_disk_free_gb": 100,
+    "max_wait_min": 360,
+    "_comentario": "Teto por container e limites do host para a matriz longa (servidor compartilhado). Medido em 29/10 na seq. 14: DPVO 2 GiB de RAM, 1 núcleo, 3,3 GB de GPU, ~180 W e 60 °C; TartanVO 1 GiB e usa os 8 núcleos que tiver (o tempo por quadro depende disso, então fica em 8); ORB-SLAM2 0,4 GiB e 0,2 núcleo (override em cada algoritmo). Antes de cada execução a matriz espera, sem abortar, o host voltar aos limites; passados max_wait_min minutos ela para e é retomável."
+  },
   "algorithms_defaults": {
     "orbslam2": {"n_features": 1000, "th_depth": 40.0, "baseline_m": 0.05, "realtime": true}
   },
   "algorithms": {
-    "orbslam2_mono": {"image": "pibic/orbslam2:f2e6f51", "kind": "orbslam2", "mode": "mono", "monocular": true, "enabled": true},
+    "orbslam2_mono": {"image": "pibic/orbslam2:f2e6f51", "kind": "orbslam2", "mode": "mono", "monocular": true, "enabled": true,
+                      "resources": {"memory": "4g", "cpus": 4}},
     "orbslam2_rgbd": {"image": "pibic/orbslam2:f2e6f51", "kind": "orbslam2", "mode": "rgbd", "monocular": false, "enabled": true,
+                      "resources": {"memory": "4g", "cpus": 4},
                       "_comentario": "configuração usada no artigo do QueensCAMP (reprodução)"},
     "tartanvo": {"image": "pibic/tartanvo:ec2ecc3", "kind": "tartanvo", "monocular": true, "repetitions": 2, "enabled": true,
                  "step_scale_only": true,

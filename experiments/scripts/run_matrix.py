@@ -5,16 +5,22 @@ Retomável: uma execução com meta.json é pulada (use --retry-failed para refa
 as que falharam). Cada execução grava em <runs_root>/<alg>/<seq>/<cond>/seed<k>/:
 trajectory_tum.txt, meta.json, stdout.log e as listas de entrada.
 
+Servidor compartilhado e matriz longa: antes de cada execução espera (sem abortar) o host ficar dentro dos
+limites de `resources` (temperatura da CPU e da GPU, RAM disponível, disco livre, memória livre da GPU).
+Para parar com limpeza depois da execução em curso: `touch <runs_root>/STOP`.
+
 Exemplos:
   python scripts/run_matrix.py --dry-run
   python scripts/run_matrix.py --algorithms dpvo --sequences 09 --conditions original
 """
 import argparse
+import csv
 from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
 import shlex
+import shutil
 import subprocess
 import sys
 import threading
@@ -66,16 +72,102 @@ class GpuMonitor(threading.Thread):
         return max(0, self.peak - self.baseline)
 
 
-RESOURCE_DEFAULTS = {'memory': '24g', 'cpus': 8, 'pids': 1024, 'min_free_gpu_mib': 10000}
+RESOURCE_DEFAULTS = {'memory': '8g', 'cpus': 8, 'pids': 1024, 'min_free_gpu_mib': 10000,
+                     'max_gpu_temp_c': 83, 'max_cpu_temp_c': 90, 'min_mem_available_gb': 12, 'min_disk_free_gb': 100,
+                     'max_wait_min': 360}
+STOP_FILE = 'STOP'
+
+
+def nvidia_smi(field):
+    try:
+        out = subprocess.run(['nvidia-smi', f'--query-gpu={field}', '--format=csv,noheader,nounits', '-i', '0'],
+                             capture_output=True, text=True, timeout=5).stdout
+        return int(float(out.strip().splitlines()[0]))
+    except (OSError, ValueError, IndexError, subprocess.SubprocessError):
+        return None
 
 
 def gpu_free_mib():
+    return nvidia_smi('memory.free')
+
+
+def cpu_temp_c():
+    temps = []
+    for zone in Path('/sys/class/thermal').glob('thermal_zone*'):
+        try:
+            if (zone / 'type').read_text().strip() == 'x86_pkg_temp':
+                temps.append(int((zone / 'temp').read_text()) / 1000)
+        except (OSError, ValueError):
+            continue
+    return max(temps) if temps else None
+
+
+def mem_available_gb():
     try:
-        out = subprocess.run(['nvidia-smi', '--query-gpu=memory.free', '--format=csv,noheader,nounits', '-i', '0'],
-                             capture_output=True, text=True, timeout=5).stdout
-        return int(out.strip().splitlines()[0])
-    except (OSError, ValueError, IndexError, subprocess.SubprocessError):
-        return None
+        for line in Path('/proc/meminfo').read_text().splitlines():
+            if line.startswith('MemAvailable:'):
+                return int(line.split()[1]) / 2**20
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def read_hardware(disk_path):
+    """Leituras do host que limitam a matriz; None quando uma delas não pode ser lida."""
+    try:
+        disk = shutil.disk_usage(disk_path).free / 2**30
+    except OSError:
+        disk = None
+    return {'gpu_temp_c': nvidia_smi('temperature.gpu'), 'gpu_free_mib': gpu_free_mib(), 'cpu_temp_c': cpu_temp_c(),
+            'mem_available_gb': mem_available_gb(), 'disk_free_gb': disk}
+
+
+def hardware_problems(readings, limits, uses_gpu):
+    """Motivos para não iniciar a próxima execução (lista vazia: pode seguir). Leitura ausente não bloqueia."""
+    rules = [('cpu_temp_c', 'max_cpu_temp_c', True, '°C na CPU', False),
+             ('mem_available_gb', 'min_mem_available_gb', False, 'GiB de RAM disponível', False),
+             ('disk_free_gb', 'min_disk_free_gb', False, 'GiB livres em disco', False),
+             ('gpu_temp_c', 'max_gpu_temp_c', True, '°C na GPU', True),
+             ('gpu_free_mib', 'min_free_gpu_mib', False, 'MiB livres na GPU', True)]
+    problems = []
+    for reading, limit, is_ceiling, label, gpu_only in rules:
+        value = readings.get(reading)
+        if value is None or (gpu_only and not uses_gpu):
+            continue
+        breached = value > limits[limit] if is_ceiling else value < limits[limit]
+        if breached:
+            problems.append(f'{value:.0f} {label} (limite {limits[limit]})')
+    return problems
+
+
+def wait_for_hardware(limits, uses_gpu, disk_path, reader=read_hardware, sleep=time.sleep, poll_s=60):
+    """Espera o host voltar aos limites; False se passar `max_wait_min` sem voltar (a matriz para e é retomável)."""
+    deadline = time.monotonic() + limits['max_wait_min'] * 60
+    waiting = False
+    while True:
+        problems = hardware_problems(reader(disk_path), limits, uses_gpu)
+        if not problems:
+            if waiting:
+                print('hardware dentro dos limites: retomando', flush=True)
+            return True
+        if time.monotonic() >= deadline:
+            print('hardware fora dos limites por mais de {} min, parando: {}'.format(limits['max_wait_min'], '; '.join(problems)),
+                  file=sys.stderr)
+            return False
+        if not waiting:
+            print('aguardando o hardware: ' + '; '.join(problems), flush=True)
+            waiting = True
+        sleep(poll_s)
+
+
+def never_initialized(run_dir, n_frames):
+    """ORB-SLAM2 que ficou em NOT_INITIALIZED (estado 1) em todos os quadros: não houve mapa nem keyframe."""
+    frames = Path(run_dir) / 'frames.csv'
+    if not frames.exists():
+        return False
+    with open(frames, newline='', encoding='utf-8') as f:
+        states = [row['tracking_state'] for row in csv.DictReader(f)]
+    return len(states) == n_frames and set(states) == {'1'}
 
 
 def prepare_inputs(cfg, run, algo):
@@ -96,10 +188,11 @@ def docker_command(cfg, run, algo):
     inputs = f'{run_dir}/input'
     mounts = {cfg['dataset']['root'], cfg['paths']['smoke_root'], cfg['paths']['dehaze_root']}
     cmd = ['docker', 'run', '--rm', '--gpus', 'all', '--ipc=host', '--user', f'{os.getuid()}:{os.getgid()}']
-    # Servidor compartilhado: teto de RAM (sem swap), CPU e processos por container.
-    limits = {**RESOURCE_DEFAULTS, **cfg.get('resources', {})}
+    # Servidor compartilhado: teto de RAM (sem swap), CPU e processos por container, prioridade de CPU abaixo da
+    # padrão (1024) e sem core dump (um segfault repetido por 55 h não deve encher o disco).
+    limits = {**RESOURCE_DEFAULTS, **cfg.get('resources', {}), **algo.get('resources', {})}
     cmd += ['--memory', limits['memory'], '--memory-swap', limits['memory'], '--cpus', str(limits['cpus']),
-            '--pids-limit', str(limits['pids'])]
+            '--cpu-shares', '512', '--pids-limit', str(limits['pids']), '--ulimit', 'core=0']
     for path in sorted(mounts):
         # Sem isto o Docker cria a origem ausente como root e o usuário perde a escrita nela.
         Path(path).mkdir(parents=True, exist_ok=True)
@@ -129,21 +222,26 @@ def execute(cfg, run, algo, timeout):
         root, name = (('smoke_root', 'smoke_meta.json') if kind == 'smoke' else ('dehaze_root', 'dcp_meta.json'))
         meta_file = Path(cfg['paths'][root]) / run['sequence'] / run['condition'] / name
         condition_meta = json.loads(meta_file.read_text()) if meta_file.exists() else None
+    hardware = read_hardware(run_dir)
     monitor = GpuMonitor()
     monitor.start()
     started, t0 = datetime.now(timezone.utc).isoformat(), time.monotonic()
     status, returncode = 'failed', None
+    traj = run_dir / 'trajectory_tum.txt'
     with open(run_dir / 'stdout.log', 'w', encoding='utf-8') as log:
         try:
             returncode = subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, timeout=timeout).returncode
-            traj = run_dir / 'trajectory_tum.txt'
             if returncode == 0 and traj.exists() and traj.stat().st_size > 0:
                 status = 'ok'
+            elif algo['kind'] == 'orbslam2' and never_initialized(run_dir, len(frames)):
+                # sem keyframe o SaveTrajectoryTUM do ORB-SLAM2 acessa vpKFs[0] vazio e dá segfault (139): falha de
+                # rastreamento, não de infraestrutura
+                status = 'not_initialized'
         except subprocess.TimeoutExpired:
             status = 'timeout'
     wall = time.monotonic() - t0
     meta = dict(run, image=algo['image'], status=status, returncode=returncode, wall_s=round(wall, 2),
-                peak_gpu_mib_host=monitor.stop(), n_frames=len(frames), started_at=started,
+                hardware_start=hardware, peak_gpu_mib_host=monitor.stop(), n_frames=len(frames), started_at=started,
                 finished_at=datetime.now(timezone.utc).isoformat(), command=shlex.join(cmd),
                 repo_sha=git_sha(), condition_meta=condition_meta)
     algo_meta = run_dir / 'algo_meta.json'
@@ -185,14 +283,16 @@ def main():
     if not cfg['_camera_ready']:
         print('Preencha fx, fy, cx, cy em config/experiment.json antes de executar.', file=sys.stderr)
         return 2
-    min_free = {**RESOURCE_DEFAULTS, **cfg.get('resources', {})}['min_free_gpu_mib']
+    limits = {**RESOURCE_DEFAULTS, **cfg.get('resources', {})}
+    runs_root = Path(cfg['paths']['runs_root'])
+    runs_root.mkdir(parents=True, exist_ok=True)
     for i, run in enumerate(pending[:args.max_runs] if args.max_runs else pending, 1):
-        if cfg['algorithms'][run['algorithm']]['kind'] != 'orbslam2':
-            free = gpu_free_mib()
-            if free is not None and free < min_free:
-                print(f'GPU com só {free} MiB livres (mínimo {min_free}): outro processo a está usando. '
-                      'Parando; rode de novo quando liberar (execuções concluídas são puladas).', file=sys.stderr)
-                return 3
+        if (runs_root / STOP_FILE).exists():
+            print(f'{runs_root / STOP_FILE} existe: parando antes da próxima execução (apague o arquivo e rode de novo).')
+            return 4
+        uses_gpu = cfg['algorithms'][run['algorithm']]['kind'] != 'orbslam2'
+        if not wait_for_hardware(limits, uses_gpu, runs_root):
+            return 3
         meta = execute(cfg, run, cfg['algorithms'][run['algorithm']], cfg['timeout_s'])
         print(f"[{i}/{len(pending)}] {run['algorithm']} {run['sequence']} {run['condition']} seed{run['seed']}: "
               f"{meta['status']} ({meta['wall_s']} s)", flush=True)

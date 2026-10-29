@@ -90,6 +90,67 @@ class LayoutTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             queenscamp.write_calib(self.cfg, self.root / 'calib.txt')
 
+    def test_docker_limits_follow_algorithm_override_and_forbid_core_dumps(self):
+        def option(cmd, name):
+            return cmd[cmd.index(name) + 1]
+
+        orb = queenscamp.expand_runs(self.cfg, ['orbslam2_rgbd'], ['09'], ['original'])[0]
+        dpvo = queenscamp.expand_runs(self.cfg, ['dpvo'], ['09'], ['original'])[0]
+        cmd_orb = run_matrix.docker_command(self.cfg, orb, self.cfg['algorithms']['orbslam2_rgbd'])
+        cmd_dpvo = run_matrix.docker_command(self.cfg, dpvo, self.cfg['algorithms']['dpvo'])
+        self.assertEqual((option(cmd_orb, '--memory'), option(cmd_orb, '--cpus')), ('4g', '4'))
+        self.assertEqual((option(cmd_dpvo, '--memory'), option(cmd_dpvo, '--cpus')), ('8g', '8'))
+        self.assertEqual(option(cmd_orb, '--memory-swap'), option(cmd_orb, '--memory'))
+        for cmd in (cmd_orb, cmd_dpvo):
+            self.assertEqual(option(cmd, '--ulimit'), 'core=0')
+            self.assertEqual(option(cmd, '--cpu-shares'), '512')
+
+
+class HardwareTests(unittest.TestCase):
+    LIMITS = {**run_matrix.RESOURCE_DEFAULTS, 'max_wait_min': 10}
+    COOL = dict(gpu_temp_c=60, gpu_free_mib=15000, cpu_temp_c=60, mem_available_gb=50, disk_free_gb=900)
+
+    def test_cool_host_has_no_problems(self):
+        self.assertEqual(run_matrix.hardware_problems(self.COOL, self.LIMITS, uses_gpu=True), [])
+
+    def test_hot_cpu_blocks_every_run_but_gpu_limits_only_gpu_runs(self):
+        hot_cpu = {**self.COOL, 'cpu_temp_c': 95}
+        self.assertEqual(len(run_matrix.hardware_problems(hot_cpu, self.LIMITS, uses_gpu=False)), 1)
+        busy_gpu = {**self.COOL, 'gpu_temp_c': 90, 'gpu_free_mib': 2000}
+        self.assertEqual(len(run_matrix.hardware_problems(busy_gpu, self.LIMITS, uses_gpu=True)), 2)
+        self.assertEqual(run_matrix.hardware_problems(busy_gpu, self.LIMITS, uses_gpu=False), [])
+
+    def test_low_memory_and_disk_block(self):
+        low = {**self.COOL, 'mem_available_gb': 5, 'disk_free_gb': 50}
+        self.assertEqual(len(run_matrix.hardware_problems(low, self.LIMITS, uses_gpu=False)), 2)
+
+    def test_unreadable_sensor_does_not_block(self):
+        blind = {key: None for key in self.COOL}
+        self.assertEqual(run_matrix.hardware_problems(blind, self.LIMITS, uses_gpu=True), [])
+
+    def test_wait_resumes_when_host_cools_down(self):
+        readings = iter([{**self.COOL, 'cpu_temp_c': 95}, {**self.COOL, 'cpu_temp_c': 92}, self.COOL])
+        waited = []
+        ok = run_matrix.wait_for_hardware(self.LIMITS, False, '.', reader=lambda _: next(readings), sleep=waited.append)
+        self.assertTrue(ok)
+        self.assertEqual(len(waited), 2)
+
+    def test_wait_gives_up_after_max_wait(self):
+        ok = run_matrix.wait_for_hardware({**self.LIMITS, 'max_wait_min': 0}, False, '.',
+                                          reader=lambda _: {**self.COOL, 'cpu_temp_c': 95}, sleep=lambda _: None)
+        self.assertFalse(ok)
+
+    def test_never_initialized_needs_every_frame_in_state_not_initialized(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            frames = Path(tmp) / 'frames.csv'
+            frames.write_text('timestamp,tracking_state,track_ms\n' + ''.join(f'{i},1,8.0\n' for i in range(4)))
+            self.assertTrue(run_matrix.never_initialized(tmp, 4))
+            self.assertFalse(run_matrix.never_initialized(tmp, 5))  # parou antes do fim: não é falha de rastreamento
+            frames.write_text('timestamp,tracking_state,track_ms\n1,1,8.0\n2,2,8.0\n')
+            self.assertFalse(run_matrix.never_initialized(tmp, 2))
+            frames.unlink()
+            self.assertFalse(run_matrix.never_initialized(tmp, 2))
+
 
 def trajectory(positions, yaws=None):
     poses = []

@@ -58,10 +58,11 @@ bash scripts/check_gpu.sh pibic/tartanvo:ec2ecc3
 | ORB-SLAM2: o `git clone` do repositório trava | o pacote grande (vocabulário) para no meio em algumas redes e não é retomável | tarball do commit fixo (codeload), baixado do zero até vir íntegro (`gzip -t`), até 8 tentativas |
 | ORB-SLAM2: includes inseridos no meio do `Optimizer.cc` | o arquivo começa com BOM UTF-8 | o patch remove o BOM antes de inserir `unistd.h` e `cstdlib` |
 | `run_matrix.py`: a pasta de saída fica com dono root | o Docker cria como root a origem de montagem que não existe | `run_matrix.py` cria as pastas antes de montar |
+| ORB-SLAM2 monocular na seq. 14 (original): código 139 e sem `trajectory_tum.txt` | o sistema ficou em NOT_INITIALIZED em todos os 831 quadros, sem keyframe, e o `SaveTrajectoryTUM` lê `vpKFs[0]` de um vetor vazio | é falha de rastreamento: `run_matrix.py` grava `status = not_initialized` (fração rastreada 0) quando todos os quadros do `frames.csv` ficam no estado 1 |
 
 A profundidade tem mediana de 0,607 m e 49% de zeros, mas `depth_scale = 1000` está certo: o ORB-SLAM2 RGB-D reproduz o artigo (ATE 0,151 m com Sim3, escala 1,13), e um erro de unidade daria uma escala de ordens de grandeza.
 
-Servidor compartilhado: a matriz agora limita cada container (`--memory` 24 g sem swap, `--cpus` 8, `--pids-limit`) e para se a GPU tiver menos de 10 GB livres. Os valores vêm de `resources` no `config/experiment.json`.
+Servidor compartilhado e matriz de ~55 h: a matriz limita cada container (`--memory` sem swap, `--cpus`, `--pids-limit`, `--cpu-shares 512`, sem core dump) e, antes de cada execução, espera sem abortar o host ficar dentro dos limites (CPU ≤ 90 °C, GPU ≤ 83 °C, RAM disponível ≥ 12 GiB, disco livre ≥ 100 GiB, GPU com ≥ 10 GB livres). Passados 360 min fora dos limites ela para e é retomável. `touch /data/pibic_runs/STOP` faz parar depois da execução em curso. Os valores vêm de `resources` no `config/experiment.json`, medidos na seq. 14: DPVO 2 GiB de RAM, 1 núcleo, 3,3 GB de GPU, ~180 W e 60 °C; TartanVO 1 GiB e todos os núcleos que tiver (8); ORB-SLAM2 0,4 GiB e 0,2 núcleo.
 
 ## Registro
 Máquina: ServidorIartes, Ubuntu 24.04, 24 núcleos, 62 GB de RAM. O host é Ubuntu 24.04; as imagens usam Ubuntu 22.04 e 18.04.
