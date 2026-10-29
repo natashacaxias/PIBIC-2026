@@ -1,6 +1,6 @@
 # Ambiente da máquina do laboratório
 
-Jira: NATASHA-9 (ambiente) e NATASHA-25 (spike da GPU). Preparado em 10/10/2026 **sem acesso à máquina**: os passos abaixo ainda não foram executados. Ao rodar, anotar as versões reais na seção "Registro".
+Jira: NATASHA-9 (ambiente) e NATASHA-25 (spike da GPU). Preparado em 10/10/2026 sem acesso à máquina e validado em 29/10/2026 no servidor do laboratório (ServidorIartes). As versões reais estão na seção "Registro" e os problemas encontrados em "Problemas encontrados no primeiro dia".
 
 ## Requisitos
 | Item | Requisito | Por quê |
@@ -46,12 +46,28 @@ bash scripts/check_gpu.sh pibic/tartanvo:ec2ecc3
 
 **Se nada compilar em sm_120:** usar outra GPU do laboratório (Ampere/Ada com CUDA 12.1) com as versões originais dos autores, ou rodar só o DPVO e o TartanVO via Docker oficial deles. Registrar a decisão no Jira (NATASHA-25).
 
-## Registro (preencher na máquina)
+## Problemas encontrados no primeiro dia
+| Sintoma | Causa | Correção |
+|---|---|---|
+| `docker run --gpus all`: "failed to discover GPU vendor from CDI" | NVIDIA Container Toolkit ausente | instalado o toolkit 1.20.1 (precisa de sudo) |
+| DPVO não compila: `no suitable conversion function from "const at::DeprecatedTypeProperties"` | PyTorch ≥ 2.7 removeu `Tensor::type()`, que o código original usa nos dispatches (`altcorr` e `lietorch`) | `sed` no Dockerfile troca `.type()` por `.scalar_type()` antes do `pip install` |
+| DPVO falha no primeiro import: `No module named 'dpvo.loop_closure'` | a pasta não tem `__init__.py` no repositório, e o `find_packages()` a omite | `touch dpvo/loop_closure/__init__.py` no Dockerfile |
+| `check_gpu.sh` dizia "GPU pronta" sem rodar o PyTorch | `docker run` sem `-i` não repassava o script ao Python | `-i` no `docker run` |
+
+Servidor compartilhado: a matriz agora limita cada container (`--memory` 24 g sem swap, `--cpus` 8, `--pids-limit`) e para se a GPU tiver menos de 10 GB livres. Os valores vêm de `resources` no `config/experiment.json`.
+
+## Registro
+Máquina: ServidorIartes, Ubuntu 24.04, 24 núcleos, 62 GB de RAM. O host é Ubuntu 24.04; as imagens usam Ubuntu 22.04 e 18.04.
+
 | Item | Versão |
 |---|---|
-| Driver NVIDIA | |
-| Docker / NVIDIA Container Toolkit | |
-| `torch.__version__` / `torch.version.cuda` (imagem DPVO) | |
-| Arquiteturas compiladas (`get_arch_list`) | |
-| Tempo por quadro DPVO / TartanVO (seq. 09) | |
-| Pico de memória DPVO / TartanVO | |
+| GPU | RTX 5070 Ti, 16 GB, capability 12.0 |
+| Driver NVIDIA | 595.99.02 (CUDA 13.2 no driver) |
+| Docker / NVIDIA Container Toolkit | 29.9.2 / 1.20.1 |
+| `torch.__version__` / `torch.version.cuda` (imagens DPVO e TartanVO) | 2.7.1+cu128 / 12.8 |
+| Arquiteturas compiladas (`get_arch_list`) | sm_75, sm_80, sm_86, sm_90, sm_100, sm_120, compute_120 |
+| Tempo por quadro DPVO (seq. 09, original, seed 0) | média 29,7 ms, mediana 31,8 ms (1284 quadros, 46,5 s no total) |
+| Tempo por quadro TartanVO (seq. 09) | ainda não medido |
+| Pico de memória da GPU DPVO | 701 MiB alocados pelo PyTorch; 2531 MiB vistos pelo `nvidia-smi` acima da linha de base |
+| Pico de memória da GPU TartanVO | ainda não medido |
+| Piloto DPVO seq. 09, original, seed 0 | `status = ok`, fração rastreada 1,0, ATE 0,232 m (Sim3, escala 0,214), RPE 0,384 m |
