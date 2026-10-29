@@ -101,6 +101,8 @@ def docker_command(cfg, run, algo):
     cmd += ['--memory', limits['memory'], '--memory-swap', limits['memory'], '--cpus', str(limits['cpus']),
             '--pids-limit', str(limits['pids'])]
     for path in sorted(mounts):
+        # Sem isto o Docker cria a origem ausente como root e o usuário perde a escrita nela.
+        Path(path).mkdir(parents=True, exist_ok=True)
         cmd += ['-v', f'{path}:{path}:ro']
     cmd += ['-v', f'{run_dir}:{run_dir}', '-e', 'HOME=/tmp', '-e', f'SEED={run["seed"]}']
     kind = algo['kind']
