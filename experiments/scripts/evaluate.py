@@ -11,7 +11,11 @@ Alinhamento (ver docs/protocolo_experimental.md):
                ground truth) são sempre calculados; `ate_m` é o definido em
                evaluation.monocular_primary, exceto para algoritmos com step_scale_only
                (TartanVO, cuja saída não tem escala consistente entre quadros)
-  RGB-D     -> SE(3) (`ate_m`)
+  RGB-D     -> SE(3) (`ate_m`); `ate_sim3_m` e `sim3_scale` ficam como diagnóstico
+
+Trajetória degenerada (`degenerate`): em sensores métricos a escala do Sim(3) deve ficar perto da
+da condição original; fora de [1/f, f] vezes a mediana do original (f = evaluation.degenerate_scale_factor)
+a trajetória é marcada. Pega falhas em que o algoritmo informa rastreamento OK (ORB-SLAM2 RGB-D no `wet`).
 """
 import argparse
 import copy
@@ -29,8 +33,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.queenscamp import load_config, sequence_dir  # noqa: E402
 
 RUN_FIELDS = ['algorithm', 'sequence', 'condition', 'seed', 'status', 'n_frames', 'n_matched', 'tracked_fraction',
-              'ate_m', 'ate_metric', 'ate_sim3_m', 'ate_stepscale_m', 'sim3_scale', 'rpe_trans_m', 'rpe_trans_pct',
-              'rpe_rot_deg',
+              'ate_m', 'ate_metric', 'ate_sim3_m', 'ate_stepscale_m', 'sim3_scale', 'scale_vs_original', 'degenerate',
+              'rpe_trans_m', 'rpe_trans_pct', 'rpe_rot_deg',
               'wall_s', 'mean_ms_per_frame', 'peak_gpu_mib', 'error']
 SUMMARY_METRICS = ['ate_m', 'tracked_fraction', 'rpe_trans_pct', 'rpe_rot_deg']
 
@@ -116,6 +120,26 @@ def evaluate_run(cfg, meta):
     return row
 
 
+def flag_degenerate(rows, algorithms, factor):
+    """Preenche `scale_vs_original` e `degenerate` nas execuções de sensores métricos (não monoculares).
+
+    A referência é a mediana da escala Sim(3) da condição original do mesmo algoritmo e sequência. Em
+    monoculares a escala é arbitrária por execução, então ficam None, assim como as execuções sem referência.
+    """
+    scales = {}
+    for r in rows:
+        if r['condition'] == 'original' and r['status'] == 'ok' and r.get('sim3_scale') is not None:
+            scales.setdefault((r['algorithm'], r['sequence']), []).append(r['sim3_scale'])
+    reference = {key: float(np.median(values)) for key, values in scales.items()}
+    for r in rows:
+        ref, scale = reference.get((r['algorithm'], r['sequence'])), r.get('sim3_scale')
+        if algorithms[r['algorithm']]['monocular'] or not ref or scale is None:
+            r['scale_vs_original'] = r['degenerate'] = None
+            continue
+        r['scale_vs_original'] = scale / ref
+        r['degenerate'] = not (1 / factor <= r['scale_vs_original'] <= factor)
+
+
 def summarize(rows):
     groups = {}
     for row in rows:
@@ -123,7 +147,8 @@ def summarize(rows):
     summary = []
     for (algorithm, sequence, condition), items in sorted(groups.items()):
         out = {'algorithm': algorithm, 'sequence': sequence, 'condition': condition,
-               'n_runs': len(items), 'n_ok': sum(r['status'] == 'ok' for r in items)}
+               'n_runs': len(items), 'n_ok': sum(r['status'] == 'ok' for r in items),
+               'n_degenerate': sum(bool(r.get('degenerate')) for r in items)}
         for name in SUMMARY_METRICS:
             values = [r[name] for r in items if r.get(name) is not None and r['status'] == 'ok']
             values = [v for v in values if not np.isnan(v)]
@@ -156,6 +181,7 @@ def main():
         print('nenhuma execução encontrada em', cfg['paths']['runs_root'])
         return 1
     rows = [evaluate_run(cfg, m) for m in metas]
+    flag_degenerate(rows, cfg['algorithms'], cfg['evaluation']['degenerate_scale_factor'])
     out = Path(cfg['paths']['results_root'])
     out.mkdir(parents=True, exist_ok=True)
     write_csv(rows, out / 'metrics.csv', RUN_FIELDS)

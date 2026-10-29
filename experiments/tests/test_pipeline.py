@@ -138,6 +138,30 @@ class MetricTests(unittest.TestCase):
         self.assertLess(m['ate_sim3_m'], 1e-6)
         self.assertAlmostEqual(m['sim3_scale'], 0.5, places=3)
 
+    def test_flag_degenerate_uses_original_scale_of_metric_sensors(self):
+        algos = {'rgbd': {'monocular': False}, 'mono': {'monocular': True}}
+
+        def row(algorithm, condition, scale, status='ok', sequence='09'):
+            return dict(algorithm=algorithm, sequence=sequence, condition=condition, status=status, sim3_scale=scale)
+
+        rows = [row('rgbd', 'original', 1.12), row('rgbd', 'original', 1.14),  # referência: mediana 1,13
+                row('rgbd', 'dirt', 0.70),            # degradou, mas a escala continua plausível
+                row('rgbd', 'wet', 90.0),             # trajetória quase parada, estado "OK" no algoritmo
+                row('rgbd', 'breakage', 0.4),         # encolhida abaixo de 1/f
+                row('mono', 'original', 3.0), row('mono', 'wet', 300.0),  # escala monocular é arbitrária
+                row('rgbd', 'dirt', None, status='failed'),
+                row('rgbd', 'wet', 90.0, sequence='10')]  # sem original nessa sequência
+        evaluate.flag_degenerate(rows, algos, factor=2.0)
+        flags = [r['degenerate'] for r in rows]
+        self.assertEqual(flags, [False, False, False, True, True, None, None, None, None])
+        self.assertAlmostEqual(rows[3]['scale_vs_original'], 90.0 / 1.13)
+        self.assertIsNone(rows[5]['scale_vs_original'])
+
+    def test_summary_counts_degenerate_runs(self):
+        rows = [dict(algorithm='a', sequence='09', condition='wet', status='ok', ate_m=1.0, tracked_fraction=1.0,
+                     rpe_trans_pct=1.0, rpe_rot_deg=1.0, degenerate=d) for d in (True, False, None)]
+        self.assertEqual(evaluate.summarize(rows)[0]['n_degenerate'], 1)
+
     def test_summary_degradation_relative_to_original(self):
         rows = [dict(algorithm='a', sequence='09', condition=c, status='ok', ate_m=v, tracked_fraction=1.0,
                      rpe_trans_pct=1.0, rpe_rot_deg=1.0) for c, v in [('original', 0.2), ('original', 0.4), ('wet', 0.6)]]
