@@ -1,6 +1,6 @@
 # Ambiente da máquina do laboratório
 
-Jira: NATASHA-9 (ambiente) e NATASHA-25 (spike da GPU). Preparado em 10/10/2026 sem acesso à máquina e validado em 29/10/2026 no servidor do laboratório (ServidorIartes). As versões reais estão na seção "Registro" e os problemas encontrados em "Problemas encontrados no primeiro dia".
+Jira: NATASHA-9 (ambiente), NATASHA-25 (spike da GPU) e NATASHA-10 (algoritmos). Preparado em 10/10/2026 sem acesso à máquina e validado em 29/10/2026 no servidor do laboratório (ServidorIartes). As versões reais estão na seção "Registro" e os problemas encontrados em "Problemas encontrados no primeiro dia".
 
 ## Requisitos
 | Item | Requisito | Por quê |
@@ -21,7 +21,7 @@ Jira: NATASHA-9 (ambiente) e NATASHA-25 (spike da GPU). Preparado em 10/10/2026 
 # 1. Repositório e ambiente do host
 git clone https://github.com/natashacaxias/PIBIC-2026.git && cd PIBIC-2026/experiments
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python -m unittest discover -s tests          # 10 testes, sem GPU
+.venv/bin/python -m unittest discover -s tests          # 20 testes, sem GPU
 
 # 2. Imagens (a do DPVO compila extensões CUDA: ~20–40 min)
 docker build -t pibic/dpvo:0ac95b6       algorithms/dpvo
@@ -53,6 +53,13 @@ bash scripts/check_gpu.sh pibic/tartanvo:ec2ecc3
 | DPVO não compila: `no suitable conversion function from "const at::DeprecatedTypeProperties"` | PyTorch ≥ 2.7 removeu `Tensor::type()`, que o código original usa nos dispatches (`altcorr` e `lietorch`) | `sed` no Dockerfile troca `.type()` por `.scalar_type()` antes do `pip install` |
 | DPVO falha no primeiro import: `No module named 'dpvo.loop_closure'` | a pasta não tem `__init__.py` no repositório, e o `find_packages()` a omite | `touch dpvo/loop_closure/__init__.py` no Dockerfile |
 | `check_gpu.sh` dizia "GPU pronta" sem rodar o PyTorch | `docker run` sem `-i` não repassava o script ao Python | `-i` no `docker run` |
+| TartanVO: `compile_with_cache` não existe | cupy 13 removeu `cupy.cuda.compile_with_cache`, usado nos kernels de correlação do PWC-Net | `cupy.RawModule(code=...)` no `correlation.py`, com `lru_cache` no lugar do memoize comentado |
+| TartanVO: `as_dcm`/`from_dcm` não existem | o scipy atual os renomeou | `as_matrix`/`from_matrix` em todos os `.py` da imagem |
+| ORB-SLAM2: o `git clone` do repositório trava | o pacote grande (vocabulário) para no meio em algumas redes e não é retomável | tarball do commit fixo (codeload), baixado do zero até vir íntegro (`gzip -t`), até 8 tentativas |
+| ORB-SLAM2: includes inseridos no meio do `Optimizer.cc` | o arquivo começa com BOM UTF-8 | o patch remove o BOM antes de inserir `unistd.h` e `cstdlib` |
+| `run_matrix.py`: a pasta de saída fica com dono root | o Docker cria como root a origem de montagem que não existe | `run_matrix.py` cria as pastas antes de montar |
+
+A profundidade tem mediana de 0,607 m e 49% de zeros, mas `depth_scale = 1000` está certo: o ORB-SLAM2 RGB-D reproduz o artigo (ATE 0,151 m com Sim3, escala 1,13), e um erro de unidade daria uma escala de ordens de grandeza.
 
 Servidor compartilhado: a matriz agora limita cada container (`--memory` 24 g sem swap, `--cpus` 8, `--pids-limit`) e para se a GPU tiver menos de 10 GB livres. Os valores vêm de `resources` no `config/experiment.json`.
 
@@ -67,7 +74,10 @@ Máquina: ServidorIartes, Ubuntu 24.04, 24 núcleos, 62 GB de RAM. O host é Ubu
 | `torch.__version__` / `torch.version.cuda` (imagens DPVO e TartanVO) | 2.7.1+cu128 / 12.8 |
 | Arquiteturas compiladas (`get_arch_list`) | sm_75, sm_80, sm_86, sm_90, sm_100, sm_120, compute_120 |
 | Tempo por quadro DPVO (seq. 09, original, seed 0) | média 29,7 ms, mediana 31,8 ms (1284 quadros, 46,5 s no total) |
-| Tempo por quadro TartanVO (seq. 09) | ainda não medido |
+| Tempo por quadro TartanVO (seq. 09, original, seed 0) | média 22,5 ms, mediana 16,5 ms (1284 quadros, 35,7 s no total) |
 | Pico de memória da GPU DPVO | 701 MiB alocados pelo PyTorch; 2531 MiB vistos pelo `nvidia-smi` acima da linha de base |
-| Pico de memória da GPU TartanVO | ainda não medido |
+| Pico de memória da GPU TartanVO | 237 MiB alocados pelo PyTorch |
 | Piloto DPVO seq. 09, original, seed 0 | `status = ok`, fração rastreada 1,0, ATE 0,232 m (Sim3, escala 0,214), RPE 0,384 m |
+| Piloto TartanVO seq. 09, original, seed 0 | `status = ok`, fração rastreada 1,0, ATE 0,234 m (escala por passo) e 0,503 m (Sim3) |
+| Piloto ORB-SLAM2 RGB-D seq. 09, original (5 sementes, mediana) | fração rastreada 1,0, ATE 0,321 m (SE3) e 0,151 m (Sim3, escala 1,13); 96 s por execução com `--realtime` |
+| Piloto ORB-SLAM2 monocular seq. 09, original, seed 0 | `status = ok`, fração rastreada 0,588, ATE 0,060 m (Sim3, escala 3,23, só nos quadros rastreados) |
