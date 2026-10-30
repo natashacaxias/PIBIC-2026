@@ -77,7 +77,7 @@ class GpuMonitor(threading.Thread):
 
 RESOURCE_DEFAULTS = {'memory': '8g', 'cpus': 8, 'pids': 1024, 'min_free_gpu_mib': 10000,
                      'max_gpu_temp_c': 83, 'max_cpu_temp_c': 85, 'min_mem_available_gb': 12, 'min_disk_free_gb': 100,
-                     'max_wait_min': 360, 'max_consecutive_failures': 5}
+                     'max_wait_min': 360, 'max_consecutive_failures': 5, 'max_xid': 2}
 STOP_FILE = 'STOP'
 
 
@@ -161,6 +161,16 @@ def wait_for_hardware(limits, uses_gpu, disk_path, reader=read_hardware, sleep=t
             print('aguardando o hardware: ' + '; '.join(problems), flush=True)
             waiting = True
         sleep(poll_s)
+
+
+def xid_count(since, run=subprocess.run):
+    """Quantos erros "NVRM: Xid" o kernel registrou desde `since` (datetime local). Log ilegível conta 0."""
+    try:
+        out = run(['journalctl', '-k', '--no-pager', '-q', '--since', since.strftime('%Y-%m-%d %H:%M:%S')],
+                  capture_output=True, text=True, timeout=30).stdout
+    except (OSError, subprocess.SubprocessError):
+        return 0
+    return sum('NVRM: Xid' in line for line in out.splitlines())
 
 
 def failure_streak(streak, status):
@@ -337,7 +347,7 @@ def main():
     limits = {**RESOURCE_DEFAULTS, **cfg.get('resources', {})}
     runs_root = Path(cfg['paths']['runs_root'])
     runs_root.mkdir(parents=True, exist_ok=True)
-    streak = 0
+    streak, lane_start = 0, datetime.now()
     for i, run in enumerate(pending[:args.max_runs] if args.max_runs else pending, 1):
         if streak >= limits['max_consecutive_failures']:
             # GPU ou driver caído faria a fila marcar centenas de execuções como failed em minutos
@@ -347,6 +357,10 @@ def main():
             print(f'{runs_root / STOP_FILE} existe: parando antes da próxima execução (apague o arquivo e rode de novo).')
             return 4
         uses_gpu = cfg['algorithms'][run['algorithm']]['kind'] != 'orbslam2'
+        if uses_gpu and xid_count(lane_start) >= limits['max_xid']:
+            # o driver já travou a GPU mais de uma vez desde que esta fila subiu: não insistir sem alguém olhar
+            print(f"{limits['max_xid']} erros Xid da NVIDIA no log do kernel desde {lane_start:%H:%M}: parando a fila de GPU.")
+            return 6
         if not wait_for_hardware(limits, uses_gpu, runs_root):
             return 3
         meta = execute(cfg, run, cfg['algorithms'][run['algorithm']], cfg['timeout_s'],

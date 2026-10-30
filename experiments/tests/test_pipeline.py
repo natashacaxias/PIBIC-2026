@@ -207,6 +207,25 @@ class HardwareTests(unittest.TestCase):
         for status in ('ok', 'not_initialized', 'tracking_lost'):
             self.assertEqual(run_matrix.failure_streak(3, status), 0)
 
+    def test_xid_count_reads_only_nvrm_xid_lines_and_tolerates_missing_journal(self):
+        import datetime, subprocess
+        log = ('kernel: NVRM: Xid (PCI:0000:01:00): 8, pid=1, name=python3, channel 0x09\n'
+               'kernel: NVRM: GPU at PCI:0000:01:00: GPU-b6b9\n'
+               'kernel: NVRM: krcWatchdog_IMPL: RC watchdog: GPU is probably locked!\n'
+               'kernel: NVRM: Xid (PCI:0000:01:00): 31, pid=2, name=python3\n')
+        since = datetime.datetime(2026, 10, 30, 18, 0, 0)
+        seen = {}
+
+        def fake_run(cmd, **kw):
+            seen['cmd'] = cmd
+            return subprocess.CompletedProcess(cmd, 0, stdout=log)
+        self.assertEqual(run_matrix.xid_count(since, run=fake_run), 2)
+        self.assertIn('2026-10-30 18:00:00', seen['cmd'])
+
+        def no_journal(cmd, **kw):
+            raise FileNotFoundError('journalctl')
+        self.assertEqual(run_matrix.xid_count(since, run=no_journal), 0)
+
 
 class DpvoPoseChainTests(unittest.TestCase):
     """get_pose iterativo do DPVO: mesmo resultado do recursivo e sem limite de profundidade."""
