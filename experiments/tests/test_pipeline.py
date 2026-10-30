@@ -187,6 +187,18 @@ class HardwareTests(unittest.TestCase):
             frames.unlink()
             self.assertFalse(run_matrix.never_initialized(tmp, 2))
 
+    def test_empty_map_at_save_needs_complete_frames_and_crash_in_save(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / 'frames.csv').write_text('timestamp,tracking_state,track_ms\n1,1,8.0\n2,2,8.0\n3,3,8.0\n4,0,8.0\n')
+            log = Path(tmp) / 'stdout.log'
+            log.write_text('System Reseting\n\nSaving camera trajectory to /x/trajectory_tum.txt ...\n')
+            self.assertTrue(run_matrix.empty_map_at_save(tmp, 4))
+            self.assertFalse(run_matrix.empty_map_at_save(tmp, 5))  # parou antes do fim
+            log.write_text('System Reseting\nTracking...\n')  # caiu no meio, não ao salvar
+            self.assertFalse(run_matrix.empty_map_at_save(tmp, 4))
+            log.unlink()
+            self.assertFalse(run_matrix.empty_map_at_save(tmp, 4))
+
 
 def trajectory(positions, yaws=None):
     poses = []

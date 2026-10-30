@@ -182,15 +182,31 @@ def shard_runs(runs, shard):
     return [run for i, run in enumerate(runs) if i % n == k]
 
 
+def read_states(run_dir, n_frames):
+    """Estados de rastreamento do frames.csv, ou None se faltar ou se a execução parou antes do fim."""
+    frames = Path(run_dir) / 'frames.csv'
+    if not frames.exists():
+        return None
+    with open(frames, newline='', encoding='utf-8') as f:
+        states = [row['tracking_state'] for row in csv.DictReader(f)]
+    return states if len(states) == n_frames else None
+
+
 def never_initialized(run_dir, n_frames):
     """ORB-SLAM2 que nunca passou de NOT_INITIALIZED (estado 1): não houve mapa nem keyframe. Um reset por
     "Wrong initialization" põe um quadro em NO_IMAGES_YET (estado 0), então 0 e 1 valem; 2 (OK) ou 3 (LOST) não."""
-    frames = Path(run_dir) / 'frames.csv'
-    if not frames.exists():
+    states = read_states(run_dir, n_frames)
+    return states is not None and '1' in states and set(states) <= {'0', '1'}
+
+
+def empty_map_at_save(run_dir, n_frames):
+    """ORB-SLAM2 que rodou todos os quadros e caiu em SaveTrajectoryTUM: o mapa estava vazio no fim (perdeu o
+    rastreamento e foi resetado), então não há keyframe para salvar. Distingue de queda no meio da execução."""
+    if read_states(run_dir, n_frames) is None:
         return False
-    with open(frames, newline='', encoding='utf-8') as f:
-        states = [row['tracking_state'] for row in csv.DictReader(f)]
-    return len(states) == n_frames and '1' in states and set(states) <= {'0', '1'}
+    log = Path(run_dir) / 'stdout.log'
+    lines = log.read_text(encoding='utf-8', errors='replace').strip().splitlines() if log.exists() else []
+    return bool(lines) and lines[-1].startswith('Saving camera trajectory')
 
 
 def prepare_inputs(cfg, run, algo):
@@ -258,10 +274,13 @@ def execute(cfg, run, algo, timeout, shard=None):
             returncode = subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, timeout=timeout).returncode
             if returncode == 0 and traj.exists() and traj.stat().st_size > 0:
                 status = 'ok'
-            elif algo['kind'] == 'orbslam2' and never_initialized(run_dir, len(frames)):
+            elif algo['kind'] == 'orbslam2' and returncode == 139 and never_initialized(run_dir, len(frames)):
                 # sem keyframe o SaveTrajectoryTUM do ORB-SLAM2 acessa vpKFs[0] vazio e dá segfault (139): falha de
                 # rastreamento, não de infraestrutura
                 status = 'not_initialized'
+            elif algo['kind'] == 'orbslam2' and returncode == 139 and empty_map_at_save(run_dir, len(frames)):
+                # inicializou por poucos quadros, perdeu o rastreamento e terminou com o mapa resetado: mesmo segfault
+                status = 'tracking_lost'
         except subprocess.TimeoutExpired:
             status = 'timeout'
     wall = time.monotonic() - t0
