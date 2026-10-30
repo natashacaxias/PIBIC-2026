@@ -1,4 +1,5 @@
 """Testes do pipeline que rodam sem GPU nem dataset (layout sintético em diretório temporário)."""
+import argparse
 import json
 from pathlib import Path
 import sys
@@ -104,6 +105,37 @@ class LayoutTests(unittest.TestCase):
         for cmd in (cmd_orb, cmd_dpvo):
             self.assertEqual(option(cmd, '--ulimit'), 'core=0')
             self.assertEqual(option(cmd, '--cpu-shares'), '512')
+        self.assertNotIn('--gpus', cmd_orb)  # só CPU: não passa pelo runtime da NVIDIA
+        self.assertEqual(option(cmd_dpvo, '--gpus'), 'all')
+
+
+class ShardTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.runs = queenscamp.expand_runs(make_config(Path(self.tmp.name)), ['orbslam2_mono', 'orbslam2_rgbd'])
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_shards_partition_the_matrix(self):
+        shards = [run_matrix.shard_runs(self.runs, (k, 4)) for k in range(4)]
+        keys = [r['run_dir'] for shard in shards for r in shard]
+        self.assertEqual(sorted(keys), sorted(r['run_dir'] for r in self.runs))
+        self.assertEqual(len(keys), len(set(keys)))
+        self.assertLessEqual(max(map(len, shards)) - min(map(len, shards)), 1)
+
+    def test_no_shard_keeps_every_run(self):
+        self.assertEqual(run_matrix.shard_runs(self.runs, None), self.runs)
+
+    def test_shard_does_not_depend_on_what_is_already_done(self):
+        # a fatia é calculada na matriz inteira, não nos pendentes: reiniciar não troca execuções de fatia
+        self.assertEqual(run_matrix.shard_runs(self.runs, (2, 4))[0]['run_dir'], self.runs[2]['run_dir'])
+
+    def test_parse_shard(self):
+        self.assertEqual(run_matrix.parse_shard('3/4'), (3, 4))
+        for bad in ('4/4', '-1/4', 'a/b', '1', '0/0'):
+            with self.assertRaises(argparse.ArgumentTypeError):
+                run_matrix.parse_shard(bad)
 
 
 class HardwareTests(unittest.TestCase):

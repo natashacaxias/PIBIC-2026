@@ -9,6 +9,9 @@ Servidor compartilhado e matriz longa: antes de cada execução espera (sem abor
 limites de `resources` (temperatura da CPU e da GPU, RAM disponível, disco livre, memória livre da GPU).
 Para parar com limpeza depois da execução em curso: `touch <runs_root>/STOP`.
 
+Paralelismo: `--shard K/N` executa só as execuções de índice i % N == K da matriz (com os mesmos filtros), uma fatia
+estável entre reinícios. Rode as N fatias juntas; o ORB-SLAM2 usa ~0,2 núcleo, então várias cabem sem esforço.
+
 Exemplos:
   python scripts/run_matrix.py --dry-run
   python scripts/run_matrix.py --algorithms dpvo --sequences 09 --conditions original
@@ -160,6 +163,25 @@ def wait_for_hardware(limits, uses_gpu, disk_path, reader=read_hardware, sleep=t
         sleep(poll_s)
 
 
+def parse_shard(text):
+    """'K/N' -> (K, N) com 0 <= K < N."""
+    try:
+        k, n = (int(x) for x in text.split('/'))
+        if not 0 <= k < n:
+            raise ValueError
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"fatia inválida {text!r}: use K/N com 0 <= K < N, por exemplo 0/4")
+    return k, n
+
+
+def shard_runs(runs, shard):
+    """Fatia estável: a execução de índice i (na matriz com os mesmos filtros) é da fatia i % N."""
+    if shard is None:
+        return runs
+    k, n = shard
+    return [run for i, run in enumerate(runs) if i % n == k]
+
+
 def never_initialized(run_dir, n_frames):
     """ORB-SLAM2 que ficou em NOT_INITIALIZED (estado 1) em todos os quadros: não houve mapa nem keyframe."""
     frames = Path(run_dir) / 'frames.csv'
@@ -187,7 +209,9 @@ def docker_command(cfg, run, algo):
     run_dir = run['run_dir']
     inputs = f'{run_dir}/input'
     mounts = {cfg['dataset']['root'], cfg['paths']['smoke_root'], cfg['paths']['dehaze_root']}
-    cmd = ['docker', 'run', '--rm', '--gpus', 'all', '--ipc=host', '--user', f'{os.getuid()}:{os.getgid()}']
+    cmd = ['docker', 'run', '--rm', '--ipc=host', '--user', f'{os.getuid()}:{os.getgid()}']
+    if algo['kind'] != 'orbslam2':  # ORB-SLAM2 roda só em CPU: não precisa passar pelo runtime da NVIDIA a cada container
+        cmd += ['--gpus', 'all']
     # Servidor compartilhado: teto de RAM (sem swap), CPU e processos por container, prioridade de CPU abaixo da
     # padrão (1024) e sem core dump (um segfault repetido por 55 h não deve encher o disco).
     limits = {**RESOURCE_DEFAULTS, **cfg.get('resources', {}), **algo.get('resources', {})}
@@ -212,7 +236,7 @@ def docker_command(cfg, run, algo):
     return cmd
 
 
-def execute(cfg, run, algo, timeout):
+def execute(cfg, run, algo, timeout, shard=None):
     run_dir = Path(run['run_dir'])
     frames = prepare_inputs(cfg, run, algo)
     cmd = docker_command(cfg, run, algo)
@@ -241,7 +265,7 @@ def execute(cfg, run, algo, timeout):
             status = 'timeout'
     wall = time.monotonic() - t0
     meta = dict(run, image=algo['image'], status=status, returncode=returncode, wall_s=round(wall, 2),
-                hardware_start=hardware, peak_gpu_mib_host=monitor.stop(), n_frames=len(frames), started_at=started,
+                hardware_start=hardware, shard=shard, peak_gpu_mib_host=monitor.stop(), n_frames=len(frames), started_at=started,
                 finished_at=datetime.now(timezone.utc).isoformat(), command=shlex.join(cmd),
                 repo_sha=git_sha(), condition_meta=condition_meta)
     algo_meta = run_dir / 'algo_meta.json'
@@ -258,11 +282,12 @@ def main():
     parser.add_argument('--sequences', nargs='+')
     parser.add_argument('--conditions', nargs='+')
     parser.add_argument('--retry-failed', action='store_true')
+    parser.add_argument('--shard', type=parse_shard, metavar='K/N', help='só a fatia K de N da matriz (rode as N juntas)')
     parser.add_argument('--max-runs', type=int, help='parar depois de N execuções (teste)')
     parser.add_argument('--dry-run', action='store_true', help='só listar o que seria executado')
     args = parser.parse_args()
     cfg = load_config(args.config)
-    runs = expand_runs(cfg, args.algorithms, args.sequences, args.conditions)
+    runs = shard_runs(expand_runs(cfg, args.algorithms, args.sequences, args.conditions), args.shard)
     pending = []
     for run in runs:
         meta_file = Path(run['run_dir']) / 'meta.json'
@@ -293,7 +318,8 @@ def main():
         uses_gpu = cfg['algorithms'][run['algorithm']]['kind'] != 'orbslam2'
         if not wait_for_hardware(limits, uses_gpu, runs_root):
             return 3
-        meta = execute(cfg, run, cfg['algorithms'][run['algorithm']], cfg['timeout_s'])
+        meta = execute(cfg, run, cfg['algorithms'][run['algorithm']], cfg['timeout_s'],
+                       shard='{}/{}'.format(*args.shard) if args.shard else None)
         print(f"[{i}/{len(pending)}] {run['algorithm']} {run['sequence']} {run['condition']} seed{run['seed']}: "
               f"{meta['status']} ({meta['wall_s']} s)", flush=True)
     return 0
