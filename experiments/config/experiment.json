@@ -56,11 +56,11 @@
     "pids": 1024,
     "min_free_gpu_mib": 10000,
     "max_gpu_temp_c": 83,
-    "max_cpu_temp_c": 90,
+    "max_cpu_temp_c": 85,
     "min_mem_available_gb": 12,
     "min_disk_free_gb": 100,
     "max_wait_min": 360,
-    "_comentario": "Teto por container e limites do host para a matriz longa (servidor compartilhado). Medido em 29/10 na seq. 14: DPVO 2 GiB de RAM, 1 núcleo, 3,3 GB de GPU, ~180 W e 60 °C; TartanVO 1 GiB e usa os 8 núcleos que tiver (o tempo por quadro depende disso, então fica em 8); ORB-SLAM2 0,4 GiB e 0,2 núcleo (override em cada algoritmo). Antes de cada execução a matriz espera, sem abortar, o host voltar aos limites; passados max_wait_min minutos ela para e é retomável."
+    "_comentario": "Teto por container e limites do host para a matriz longa (servidor compartilhado). Medido em 29/10 na seq. 14: DPVO 2 GiB de RAM, 1 núcleo, 3,3 GB de GPU, ~180 W e 60 °C; TartanVO 1 GiB e usa os 8 núcleos que tiver (o tempo por quadro depende disso, então fica em 8); com isso a CPU chegou a 89 °C numa leitura, daí o limite de 85 °C que pausa a matriz entre execuções; ORB-SLAM2 0,4 GiB e 0,2 núcleo (override em cada algoritmo). Antes de cada execução a matriz espera, sem abortar, o host voltar aos limites; passados max_wait_min minutos ela para e é retomável."
   },
   "algorithms_defaults": {
     "orbslam2": {"n_features": 1000, "th_depth": 40.0, "baseline_m": 0.05, "realtime": true}

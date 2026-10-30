@@ -73,7 +73,7 @@ class GpuMonitor(threading.Thread):
 
 
 RESOURCE_DEFAULTS = {'memory': '8g', 'cpus': 8, 'pids': 1024, 'min_free_gpu_mib': 10000,
-                     'max_gpu_temp_c': 83, 'max_cpu_temp_c': 90, 'min_mem_available_gb': 12, 'min_disk_free_gb': 100,
+                     'max_gpu_temp_c': 83, 'max_cpu_temp_c': 85, 'min_mem_available_gb': 12, 'min_disk_free_gb': 100,
                      'max_wait_min': 360}
 STOP_FILE = 'STOP'
 
