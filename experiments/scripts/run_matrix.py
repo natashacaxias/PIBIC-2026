@@ -183,13 +183,14 @@ def shard_runs(runs, shard):
 
 
 def never_initialized(run_dir, n_frames):
-    """ORB-SLAM2 que ficou em NOT_INITIALIZED (estado 1) em todos os quadros: não houve mapa nem keyframe."""
+    """ORB-SLAM2 que nunca passou de NOT_INITIALIZED (estado 1): não houve mapa nem keyframe. Um reset por
+    "Wrong initialization" põe um quadro em NO_IMAGES_YET (estado 0), então 0 e 1 valem; 2 (OK) ou 3 (LOST) não."""
     frames = Path(run_dir) / 'frames.csv'
     if not frames.exists():
         return False
     with open(frames, newline='', encoding='utf-8') as f:
         states = [row['tracking_state'] for row in csv.DictReader(f)]
-    return len(states) == n_frames and set(states) == {'1'}
+    return len(states) == n_frames and '1' in states and set(states) <= {'0', '1'}
 
 
 def prepare_inputs(cfg, run, algo):

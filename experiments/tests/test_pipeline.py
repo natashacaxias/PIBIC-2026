@@ -178,7 +178,11 @@ class HardwareTests(unittest.TestCase):
             frames.write_text('timestamp,tracking_state,track_ms\n' + ''.join(f'{i},1,8.0\n' for i in range(4)))
             self.assertTrue(run_matrix.never_initialized(tmp, 4))
             self.assertFalse(run_matrix.never_initialized(tmp, 5))  # parou antes do fim: não é falha de rastreamento
+            frames.write_text('timestamp,tracking_state,track_ms\n1,1,8.0\n2,0,8.0\n3,1,8.0\n')  # reset: quadro em estado 0
+            self.assertTrue(run_matrix.never_initialized(tmp, 3))
             frames.write_text('timestamp,tracking_state,track_ms\n1,1,8.0\n2,2,8.0\n')
+            self.assertFalse(run_matrix.never_initialized(tmp, 2))
+            frames.write_text('timestamp,tracking_state,track_ms\n1,1,8.0\n2,3,8.0\n')  # já esteve inicializado e perdeu
             self.assertFalse(run_matrix.never_initialized(tmp, 2))
             frames.unlink()
             self.assertFalse(run_matrix.never_initialized(tmp, 2))
