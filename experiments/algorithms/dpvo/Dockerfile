@@ -34,5 +34,5 @@ RUN wget -q -O models.zip "https://www.dropbox.com/scl/fo/2g6e134ruh1acmaye5bmy/
     && unzip -q models.zip && rm models.zip && ls -l *.pth
 
 RUN pip3 freeze > /opt/pip-freeze.txt
-COPY run_dpvo.py /opt/run_dpvo.py
+COPY pose_chain.py run_dpvo.py /opt/
 ENTRYPOINT ["python3", "/opt/run_dpvo.py"]

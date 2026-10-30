@@ -199,6 +199,57 @@ class HardwareTests(unittest.TestCase):
             log.unlink()
             self.assertFalse(run_matrix.empty_map_at_save(tmp, 4))
 
+    def test_failure_streak_counts_only_failed_and_timeout(self):
+        streak = 0
+        for status in ('failed', 'timeout', 'failed'):
+            streak = run_matrix.failure_streak(streak, status)
+        self.assertEqual(streak, 3)
+        for status in ('ok', 'not_initialized', 'tracking_lost'):
+            self.assertEqual(run_matrix.failure_streak(3, status), 0)
+
+
+class DpvoPoseChainTests(unittest.TestCase):
+    """get_pose iterativo do DPVO: mesmo resultado do recursivo e sem limite de profundidade."""
+
+    class SE3:
+        def __init__(self, m):
+            self.m = m
+
+        def __mul__(self, other):
+            return DpvoPoseChainTests.SE3(self.m @ other.m)
+
+    class Fake:
+        def __init__(self, n, rng):
+            def step():
+                m = np.eye(4)
+                m[:3, 3] = rng.normal(size=3) * 0.01
+                return m
+            self.traj = {0: np.eye(4)}
+            self.pg = type('PG', (), {})()
+            self.pg.delta = {t: (t - 1, DpvoPoseChainTests.SE3(step())) for t in range(1, n)}
+
+    def test_matches_recursive_version_and_survives_deep_chains(self):
+        sys.path.insert(0, str(ROOT / 'algorithms/dpvo'))
+        try:
+            from pose_chain import iterative_get_pose
+        finally:
+            sys.path.pop(0)
+        SE3 = self.SE3
+        iterative = iterative_get_pose(SE3)
+
+        def recursive(self, t):  # o get_pose original do DPVO
+            if t in self.traj:
+                return SE3(self.traj[t])
+            t0, dP = self.pg.delta[t]
+            return dP * recursive(self, t0)
+
+        short = self.Fake(40, np.random.default_rng(0))
+        np.testing.assert_allclose(iterative(short, 39).m, recursive(short, 39).m, atol=1e-12)
+        deep = self.Fake(5000, np.random.default_rng(1))
+        with self.assertRaises(RecursionError):
+            recursive(deep, 4999)
+        self.assertTrue(np.isfinite(iterative(deep, 4999).m).all())
+
 
 def trajectory(positions, yaws=None):
     poses = []

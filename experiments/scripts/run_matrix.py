@@ -77,7 +77,7 @@ class GpuMonitor(threading.Thread):
 
 RESOURCE_DEFAULTS = {'memory': '8g', 'cpus': 8, 'pids': 1024, 'min_free_gpu_mib': 10000,
                      'max_gpu_temp_c': 83, 'max_cpu_temp_c': 85, 'min_mem_available_gb': 12, 'min_disk_free_gb': 100,
-                     'max_wait_min': 360}
+                     'max_wait_min': 360, 'max_consecutive_failures': 5}
 STOP_FILE = 'STOP'
 
 
@@ -161,6 +161,12 @@ def wait_for_hardware(limits, uses_gpu, disk_path, reader=read_hardware, sleep=t
             print('aguardando o hardware: ' + '; '.join(problems), flush=True)
             waiting = True
         sleep(poll_s)
+
+
+def failure_streak(streak, status):
+    """Execuções seguidas que falharam por motivo que não é rastreamento (failed, timeout). Rastreamento perdido
+    (not_initialized, tracking_lost) é resultado do experimento e zera a contagem, como o ok."""
+    return streak + 1 if status in ('failed', 'timeout') else 0
 
 
 def parse_shard(text):
@@ -331,7 +337,12 @@ def main():
     limits = {**RESOURCE_DEFAULTS, **cfg.get('resources', {})}
     runs_root = Path(cfg['paths']['runs_root'])
     runs_root.mkdir(parents=True, exist_ok=True)
+    streak = 0
     for i, run in enumerate(pending[:args.max_runs] if args.max_runs else pending, 1):
+        if streak >= limits['max_consecutive_failures']:
+            # GPU ou driver caído faria a fila marcar centenas de execuções como failed em minutos
+            print(f"{streak} execuções seguidas com failed/timeout: parando para não gastar a matriz (veja o stdout.log da última).")
+            return 5
         if (runs_root / STOP_FILE).exists():
             print(f'{runs_root / STOP_FILE} existe: parando antes da próxima execução (apague o arquivo e rode de novo).')
             return 4
@@ -342,6 +353,7 @@ def main():
                        shard='{}/{}'.format(*args.shard) if args.shard else None)
         print(f"[{i}/{len(pending)}] {run['algorithm']} {run['sequence']} {run['condition']} seed{run['seed']}: "
               f"{meta['status']} ({meta['wall_s']} s)", flush=True)
+        streak = failure_streak(streak, meta['status'])
     return 0
 
 
