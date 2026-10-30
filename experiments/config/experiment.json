@@ -60,7 +60,7 @@
     "min_mem_available_gb": 12,
     "min_disk_free_gb": 100,
     "max_wait_min": 360,
-    "_comentario": "Teto por container e limites do host para a matriz longa (servidor compartilhado). Medido em 29/10 na seq. 14: DPVO 2 GiB de RAM, 1 núcleo, 3,3 GB de GPU, ~180 W e 60 °C; TartanVO 1 GiB e usa todos os núcleos que tiver: com 8 a CPU chegou a 90 °C, então o teto dele é 4 (as execuções feitas antes disso usaram 8, o que fica no --cpus do meta.json, e o tempo por quadro não é comparável entre elas); o limite de 85 °C pausa a matriz entre execuções, mas não dentro de uma; ORB-SLAM2 0,4 GiB e ~0,6 núcleo por processo (4 em paralelo somam ~3 núcleos, pico de 4,8, e a CPU chega a 91 °C em picos curtos; override em cada algoritmo). Antes de cada execução a matriz espera, sem abortar, o host voltar aos limites; passados max_wait_min minutos ela para e é retomável."
+    "_comentario": "Teto por container e limites do host para a matriz longa (servidor compartilhado). Medido em 29/10 na seq. 14: DPVO 2 GiB de RAM, 1 núcleo, 3,3 GB de GPU, ~180 W e 60 °C; TartanVO 1 GiB e usa todos os núcleos que tiver: com 8 a CPU chegou a 90 °C, então o teto dele é 2 (4 também esquentava: 91 °C com 2 fatias de ORB-SLAM2 ao lado; as execuções feitas antes disso usaram 8 ou 4, o que fica no --cpus do meta.json, e o tempo por quadro não é comparável entre elas); o limite de 85 °C pausa a matriz entre execuções, mas não dentro de uma; ORB-SLAM2 0,4 GiB e ~0,6 núcleo por processo (4 em paralelo somam ~3 núcleos, pico de 4,8, e a CPU chega a 91 °C em picos curtos; override em cada algoritmo). Antes de cada execução a matriz espera, sem abortar, o host voltar aos limites; passados max_wait_min minutos ela para e é retomável."
   },
   "algorithms_defaults": {
     "orbslam2": {"n_features": 1000, "th_depth": 40.0, "baseline_m": 0.05, "realtime": true}
@@ -72,7 +72,7 @@
                       "resources": {"memory": "4g", "cpus": 4},
                       "_comentario": "configuração usada no artigo do QueensCAMP (reprodução)"},
     "tartanvo": {"image": "pibic/tartanvo:ec2ecc3", "kind": "tartanvo", "monocular": true, "repetitions": 2, "enabled": true,
-                 "resources": {"cpus": 4},
+                 "resources": {"cpus": 2},
                  "step_scale_only": true,
                  "_comentario": "determinístico na inferência; 2 sementes só para confirmar. Saída sem escala consistente entre quadros: avaliar só com escala por passo"},
     "dpvo": {"image": "pibic/dpvo:0ac95b6", "kind": "dpvo", "monocular": true, "enabled": true},
