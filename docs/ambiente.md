@@ -21,7 +21,7 @@ Jira: NATASHA-9 (ambiente), NATASHA-25 (spike da GPU) e NATASHA-10 (algoritmos).
 # 1. Repositório e ambiente do host
 git clone https://github.com/natashacaxias/PIBIC-2026.git && cd PIBIC-2026/experiments
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python -m unittest discover -s tests          # 20 testes, sem GPU
+.venv/bin/python -m unittest discover -s tests          # 45 testes, sem GPU
 
 # 2. Imagens (a do DPVO compila extensões CUDA: ~20–40 min)
 docker build -t pibic/dpvo:0ac95b6       algorithms/dpvo

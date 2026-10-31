@@ -22,6 +22,7 @@ Koschmieder, com um dataset piloto coletado em Manaus.
 | `docs/analise_concorrentes_2026.md` | SAL, Failure or Drift? e Kumar et al.: o que muda na originalidade |
 | `docs/relatorio_parcial.md`, `docs/artigo_esqueleto.md` | Rascunho do relatório parcial e plano do artigo |
 | `docs/plano_coleta_piloto.md` | Plano de coleta do dataset piloto (aguarda dados do hardware) |
+| `docs/publicacao.md` | Auditoria do repositório, licença sugerida, declaração de dados e checklist antes de tornar público |
 | `experiments/` | Pipeline para a máquina do laboratório: Docker por algoritmo, matriz de execuções, avaliação |
 | `arquitetura_revisao_bibliografica_vo_slam.md` | Arquitetura da revisão bibliográfica (8 temas) |
 | `literature_review/` | Coleta, deduplicação, pré-triagem por regras e triagem auditáveis (Crossref/arXiv) |
@@ -30,6 +31,40 @@ Koschmieder, com um dataset piloto coletado em Manaus.
 
 Dados brutos, corpus SQLite, PDFs, saídas e ambientes virtuais **não** são versionados
 (ver `.gitignore`).
+
+## Estado do projeto (31/10/2026)
+
+- **Matriz principal concluída:** 2.720 execuções (ORB-SLAM2 monocular e RGB-D, TartanVO, DPVO × 16 sequências do QueensCAMP × 10 condições), mais 112 execuções de uma fumaça extrema e 68 de um piloto de dehazing. Resultados e decisões de análise em [`docs/protocolo_experimental.md`](docs/protocolo_experimental.md) §10; rascunho do artigo, com tabelas, em [`docs/artigo_esqueleto.md`](docs/artigo_esqueleto.md).
+- **Em andamento:** dehazing (DCP) completo no ORB-SLAM2 (NATASHA-43).
+- **Bloqueado por coleta física:** dataset piloto amazônico e EKF (NATASHA-13/14).
+- As decisões de análise de §10 são de trabalho e **ainda não foram revisadas pelo orientador**.
+
+## Como reproduzir
+
+Requisitos: Ubuntu com driver NVIDIA ≥ 570 (a RTX 5070 Ti é Blackwell, sm_120), Docker com NVIDIA Container Toolkit, Python 3.10+ e ~140 GB de disco para os dados mais ~25 GB de imagens. Passo a passo em [`experiments/README.md`](experiments/README.md) e [`docs/ambiente.md`](docs/ambiente.md). Resumo:
+
+```bash
+cd experiments
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m unittest discover -s tests            # 45 testes, sem GPU
+docker build -t pibic/dpvo:0ac95b6 algorithms/dpvo        # idem tartanvo:ec2ecc3 e orbslam2:f2e6f51
+.venv/bin/python scripts/dataset.py download --dest /data/queenscamp_raw --sequences 09 --kind full
+.venv/bin/python scripts/dataset.py smoke --sequences 09
+.venv/bin/python scripts/run_matrix.py --algorithms dpvo --sequences 09 --conditions original --max-runs 1
+.venv/bin/python scripts/evaluate.py && .venv/bin/python scripts/stats_analysis.py && .venv/bin/python scripts/figures.py
+```
+
+A matriz principal levou cerca de 43 h neste servidor. Tudo é retomável (`run_matrix.py` pula execuções com `meta.json`).
+
+## Dados e licenças
+
+- **QueensCAMP** e **SubT-MRS** não são redistribuídos aqui: `scripts/dataset.py download` baixa o QueensCAMP do site dos autores. Os quadros reais do SubT-MRS, a fumaça sintética e o dehazing gerados a partir dos dados ficam fora do git. A licença do SubT-MRS não é declarada na página dos autores; a do QueensCAMP não foi conferida. Detalhes em [`docs/datasets.md`](docs/datasets.md).
+- Os algoritmos rodam em containers construídos a partir dos repositórios originais em commits fixos: ORB-SLAM2 (GPLv3), TartanVO (BSD 3-Clause), DPVO (MIT).
+- **Licença do código e do texto deste repositório: ainda não definida.** A sugestão e a lista do que verificar antes de tornar o repositório público estão em [`docs/publicacao.md`](docs/publicacao.md).
+
+## Como citar
+
+[PENDENTE: preencher com o artigo ou o relatório final; ver `docs/artigo_esqueleto.md`.]
 
 ## Planejamento
 

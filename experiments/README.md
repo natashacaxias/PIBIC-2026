@@ -1,6 +1,6 @@
 # Experimentos — máquina do laboratório
 
-Pipeline completo dos experimentos do PIBIC: dados → fumaça → execução dos algoritmos em Docker → métricas. Foi preparado e testado sem GPU em 10/10/2026; **a execução real acontece na máquina com a RTX 5070 Ti**. Protocolo em [`../docs/protocolo_experimental.md`](../docs/protocolo_experimental.md) e ambiente em [`../docs/ambiente.md`](../docs/ambiente.md).
+Pipeline completo dos experimentos do PIBIC: dados → fumaça → execução dos algoritmos em Docker → métricas. Preparado em 10/10/2026 e executado de 29 a 31/10/2026 no servidor do laboratório (RTX 5070 Ti, 24 núcleos, 62 GB de RAM): **2.720 execuções da matriz principal, mais 112 da fumaça extrema e 68 do piloto do DCP**, avaliadas com este pipeline. Protocolo em [`../docs/protocolo_experimental.md`](../docs/protocolo_experimental.md) e ambiente em [`../docs/ambiente.md`](../docs/ambiente.md).
 
 ```
 experiments/
@@ -18,7 +18,7 @@ experiments/
 │   ├── tartanvo/               # CUDA 12.8 + PyTorch 2.7 + cupy
 │   ├── dpvo/                   # CUDA 12.8 + PyTorch 2.7, extensões compiladas para sm_120
 │   └── droidslam/              # reserva
-└── tests/                      # 18 testes, rodam sem GPU
+└── tests/                      # 45 testes, rodam sem GPU
 ```
 
 ## Ordem de execução
@@ -52,13 +52,18 @@ bash scripts/check_gpu.sh
 .venv/bin/python scripts/run_matrix.py --algorithms orbslam2_rgbd tartanvo --sequences 09 \
     --conditions original underexposure overexposure breakage wet condensation dirt
 
-# 6) matriz completa: GPU e CPU em paralelo
+# 6) matriz completa: uma fila de GPU e fatias de CPU em paralelo (a matriz principal levou ~43 h)
+#    scripts/matrix.sh start N lança a fila de GPU e N fatias do ORB-SLAM2; stop cria o arquivo STOP; status mostra o andamento
 .venv/bin/python scripts/run_matrix.py --algorithms dpvo tartanvo   > gpu.log 2>&1 &
-.venv/bin/python scripts/run_matrix.py --algorithms orbslam2_mono orbslam2_rgbd > cpu.log 2>&1 &
+.venv/bin/python scripts/run_matrix.py --algorithms orbslam2_mono orbslam2_rgbd --shard 0/2 > cpu0.log 2>&1 &
+.venv/bin/python scripts/run_matrix.py --algorithms orbslam2_mono orbslam2_rgbd --shard 1/2 > cpu1.log 2>&1 &
+#    antes de cada execução o run_matrix.py espera CPU, GPU, RAM e disco voltarem aos limites do experiment.json (resources)
 
-# 7) baseline de dehazing (Sprint 8): gerar e rodar as condições dcp_* (desligadas por padrão)
-.venv/bin/python scripts/dataset.py dehaze
-.venv/bin/python scripts/run_matrix.py --conditions dcp_original dcp_smoke_leve dcp_smoke_moderada dcp_smoke_densa
+# 7) baseline de dehazing e fumaça extrema (condições desligadas por padrão, exploratórias; ver docs/protocolo_experimental.md §10.6 e §10.7)
+.venv/bin/python scripts/dataset.py smoke --sequences 09           # gera as 4 condições de fumaça, inclusive a exploratória smoke_extrema
+.venv/bin/python scripts/run_matrix.py --algorithms tartanvo dpvo --conditions smoke_extrema
+.venv/bin/python scripts/dataset.py dehaze --sequences 09
+.venv/bin/python scripts/run_matrix.py --sequences 09 --conditions dcp_original dcp_smoke_leve dcp_smoke_moderada dcp_smoke_densa
 
 # 8) métricas e estatística
 .venv/bin/python scripts/evaluate.py
@@ -77,7 +82,8 @@ bash scripts/check_gpu.sh
 
 Execuções com `meta.json` são puladas. `--retry-failed` refaz as que falharam.
 
-## O que ainda não foi verificado
-- Nenhuma imagem Docker foi construída nem executada (sem GPU NVIDIA na máquina de desenvolvimento).
-- Nomes reais das pastas do *Full Sequence*, escala da profundidade e intrínsecos: dependem do `inspect`.
-- Os testes cobrem layout, matriz, comandos e métricas com trajetórias sintéticas.
+## Verificado e não verificado
+- As três imagens Docker (ORB-SLAM2, TartanVO, DPVO) foram construídas e rodaram a matriz inteira; a do DROID-SLAM é reserva e não foi construída.
+- Layout do *Full Sequence*, escala da profundidade e intrínsecos já estão preenchidos em `config/experiment.json`.
+- Os testes cobrem layout, matriz, comandos, métricas e estatística com trajetórias sintéticas; a reprodução dos números do QueensCAMP está em `docs/protocolo_experimental.md` §10.1 (TartanVO 1,03× e RGB-D 1,04× o artigo, com Sim(3)).
+- Lacunas conhecidas (`docs/protocolo_experimental.md` §10): o ORB-SLAM2 RGB-D não rastreia nas sequências 02, 14 e 15; 35 execuções do RGB-D caem por *segfault* depois de reset do mapa; pico de RAM por execução não gravado; BRISQUE não rodado.
