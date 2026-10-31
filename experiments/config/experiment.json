@@ -73,8 +73,7 @@
                       "_comentario": "configuração usada no artigo do QueensCAMP (reprodução)"},
     "tartanvo": {"image": "pibic/tartanvo:ec2ecc3", "kind": "tartanvo", "monocular": true, "repetitions": 2, "enabled": true,
                  "resources": {"cpus": 2},
-                 "step_scale_only": true,
-                 "_comentario": "determinístico na inferência; 2 sementes só para confirmar. Saída sem escala consistente entre quadros: avaliar só com escala por passo"},
+                 "_comentario": "determinístico na inferência; 2 sementes só para confirmar. O ATE primário é Sim(3), como o artigo (31/10: mediana 1,03x o artigo nas 16 sequências, contra 0,59x com escala por passo); a escala por passo fica em ate_stepscale_m"},
     "dpvo": {"image": "pibic/dpvo:0ac95b6", "kind": "dpvo", "monocular": true, "enabled": true},
     "droidvo": {"image": "pibic/droidslam:2dfd39f", "kind": "droid", "monocular": true, "enabled": false,
                 "_comentario": "alternativa ao DPVO; habilitar só se o DPVO não compilar"}
@@ -83,7 +82,9 @@
     "max_time_diff_s": 0.02,
     "rpe_delta_s": 1.0,
     "monocular_primary": "sim3",
+    "rgbd_primary": "sim3",
+    "min_tracked_for_ate": 0.5,
     "degenerate_scale_factor": 2.0,
-    "_comentario": "monocular_primary: sim3 ou stepscale (decidir com o orientador; ver docs/protocolo_experimental.md). degenerate_scale_factor: fator f; em sensores métricos, escala Sim(3) fora de [1/f, f] vezes a mediana do original marca a execução como degenerada (heurística, limiar a validar)"
+    "_comentario": "monocular_primary e rgbd_primary: sim3, se3 (só RGB-D) ou stepscale (só monocular); decisão de 31/10 em docs/protocolo_experimental.md §10. min_tracked_for_ate: abaixo dessa fração rastreada a execução não entra no ATE. degenerate_scale_factor: fator f; em sensores métricos, escala Sim(3) fora de [1/f, f] vezes a mediana do original marca a execução como degenerada (heurística, limiar a validar)"
   }
 }

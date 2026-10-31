@@ -331,6 +331,42 @@ class MetricTests(unittest.TestCase):
         self.assertLess(m['ate_sim3_m'], 1e-6)
         self.assertAlmostEqual(m['sim3_scale'], 0.5, places=3)
 
+    def test_rgbd_primary_is_configurable_and_both_alignments_are_recorded(self):
+        est = trajectory(2.0 * self.gt_positions, np.linspace(0, 2 * np.pi, 60))
+        se3 = evaluate.trajectory_metrics(self.ref, est, monocular=False, delta=15, rgbd_primary='se3')
+        sim3 = evaluate.trajectory_metrics(self.ref, est, monocular=False, delta=15, rgbd_primary='sim3')
+        self.assertEqual((se3['ate_metric'], sim3['ate_metric']), ('se3', 'sim3'))
+        self.assertGreater(se3['ate_m'], 0.1)
+        self.assertLess(sim3['ate_m'], 1e-6)
+        for m in (se3, sim3):  # os dois ficam gravados para a análise de sensibilidade
+            self.assertAlmostEqual(m['ate_se3_m'], se3['ate_m'])
+            self.assertLess(m['ate_sim3_m'], 1e-6)
+
+    def test_summary_counts_lost_seeds_as_zero_tracking(self):
+        def row(status, tracked, ate=None):
+            return dict(algorithm='mono', sequence='09', condition='dirt', status=status, tracked_fraction=tracked,
+                        ate_m=ate, rpe_trans_pct=1.0, rpe_rot_deg=1.0)
+
+        rows = [row('ok', 0.9, 0.2), row('ok', 0.9, 0.4), row('not_initialized', 0.0),
+                row('not_initialized', 0.0), row('not_initialized', 0.0)]
+        s = evaluate.summarize(rows)[0]
+        self.assertEqual(s['tracked_fraction_median'], 0.0)  # antes saía 0,9, só das sementes boas
+        self.assertAlmostEqual(s['ate_m_median'], 0.3)
+        self.assertAlmostEqual(s['success_rate'], 0.4)
+
+    def test_summary_leaves_runs_below_half_tracking_out_of_the_ate(self):
+        def row(condition, tracked, ate):
+            return dict(algorithm='rgbd', sequence='09', condition=condition, status='ok', tracked_fraction=tracked,
+                        ate_m=ate, rpe_trans_pct=1.0, rpe_rot_deg=1.0)
+
+        rows = [row('original', 1.0, 0.15), row('condensation', 0.12, 0.08), row('breakage', 0.6, 0.30)]
+        summary = {s['condition']: s for s in evaluate.summarize(rows)}
+        self.assertIsNone(summary['condensation']['ate_m_median'])  # 12% da trajetória não vira "melhor que a original"
+        self.assertIsNone(summary['condensation']['ate_degradation_pct'])
+        self.assertAlmostEqual(summary['condensation']['tracked_fraction_median'], 0.12)
+        self.assertAlmostEqual(summary['breakage']['ate_degradation_pct'], 100.0)
+        self.assertEqual(summary['condensation']['n_valid'], 0)
+
     def test_static_trajectory_is_detected(self):
         # DPVO em wet/condensation: poses todas iguais, o Umeyama não tem solução
         t = np.linspace(0, 2 * np.pi, 60)

@@ -11,7 +11,8 @@ Alinhamento (ver docs/protocolo_experimental.md):
                ground truth) são sempre calculados; `ate_m` é o definido em
                evaluation.monocular_primary, exceto para algoritmos com step_scale_only
                (TartanVO, cuja saída não tem escala consistente entre quadros)
-  RGB-D     -> SE(3) (`ate_m`); `ate_sim3_m` e `sim3_scale` ficam como diagnóstico
+  RGB-D     -> `ate_m` é o definido em evaluation.rgbd_primary (Sim(3) na decisão de 31/10, que reproduz o
+               artigo); `ate_se3_m`, `ate_sim3_m` e `sim3_scale` ficam sempre gravados
 
 Trajetória degenerada (`degenerate`): em sensores métricos a escala do Sim(3) deve ficar perto da
 da condição original; fora de [1/f, f] vezes a mediana do original (f = evaluation.degenerate_scale_factor)
@@ -33,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.queenscamp import load_config, sequence_dir  # noqa: E402
 
 RUN_FIELDS = ['algorithm', 'sequence', 'condition', 'seed', 'status', 'n_frames', 'n_matched', 'tracked_fraction',
-              'ate_m', 'ate_metric', 'ate_sim3_m', 'ate_stepscale_m', 'sim3_scale', 'scale_vs_original', 'degenerate',
+              'ate_m', 'ate_metric', 'ate_se3_m', 'ate_sim3_m', 'ate_stepscale_m', 'sim3_scale', 'scale_vs_original', 'degenerate',
               'rpe_trans_m', 'rpe_trans_pct', 'rpe_rot_deg',
               'wall_s', 'mean_ms_per_frame', 'peak_gpu_mib', 'error']
 SUMMARY_METRICS = ['ate_m', 'tracked_fraction', 'rpe_trans_pct', 'rpe_rot_deg']
@@ -77,9 +78,9 @@ def rpe(ref, est, delta):
     return trans.get_statistic(metrics.StatisticsType.rmse), pct, rot.get_statistic(metrics.StatisticsType.rmse)
 
 
-def trajectory_metrics(ref, est, monocular, delta, primary='sim3'):
+def trajectory_metrics(ref, est, monocular, delta, primary='sim3', rgbd_primary='se3'):
     """Métricas de uma trajetória já associada ao ground truth; o RPE usa o alinhamento principal."""
-    out = {'ate_sim3_m': None, 'ate_stepscale_m': None, 'sim3_scale': None}
+    out = {'ate_se3_m': None, 'ate_sim3_m': None, 'ate_stepscale_m': None, 'sim3_scale': None}
     if monocular:
         # o fator de escala do Sim(3) fica registrado: valores muito longe da mediana do
         # método indicam trajetória degenerada "encolhida" para caber no ground truth
@@ -88,10 +89,12 @@ def trajectory_metrics(ref, est, monocular, delta, primary='sim3'):
         out['ate_metric'], aligned = (primary, sim3 if primary == 'sim3' else stepped)
         out['ate_m'] = out[f'ate_{primary}_m']
     else:
-        out['ate_m'], aligned = ate(ref, est, correct_scale=False)
-        out['ate_metric'] = 'se3'
-        # diagnóstico: uma escala Sim(3) longe de 1 num sensor métrico (RGB-D) aponta erro de depth_scale ou de calibração
-        out['ate_sim3_m'], _, out['sim3_scale'] = ate(ref, est, correct_scale=True, return_scale=True)
+        out['ate_se3_m'], se3 = ate(ref, est, correct_scale=False)
+        # a escala Sim(3) num sensor métrico (RGB-D) varia de 0,8 a 1,2 entre sequências sem apontar bug de
+        # depth_scale ou de calibração; longe disso (ver flag_degenerate) é falha do algoritmo
+        out['ate_sim3_m'], sim3, out['sim3_scale'] = ate(ref, est, correct_scale=True, return_scale=True)
+        out['ate_metric'], aligned = (rgbd_primary, sim3 if rgbd_primary == 'sim3' else se3)
+        out['ate_m'] = out[f'ate_{rgbd_primary}_m']
     out['rpe_trans_m'], out['rpe_trans_pct'], out['rpe_rot_deg'] = rpe(ref, aligned, min(delta, ref.num_poses - 1))
     return out
 
@@ -128,7 +131,8 @@ def evaluate_run(cfg, meta):
         delta = max(1, round(cfg['evaluation']['rpe_delta_s'] * cfg['dataset']['fps']))
         algo = cfg['algorithms'][meta['algorithm']]
         primary = 'stepscale' if algo.get('step_scale_only') else cfg['evaluation']['monocular_primary']
-        row.update(trajectory_metrics(ref, est, algo['monocular'], delta, primary))
+        row.update(trajectory_metrics(ref, est, algo['monocular'], delta, primary,
+                                      cfg['evaluation'].get('rgbd_primary', 'se3')))
     except Exception as exc:  # trajetória curta demais, arquivo corrompido etc.: registrar e seguir
         row['status'], row['error'] = 'eval_error', f'{type(exc).__name__}: {exc}'
     return row
@@ -154,7 +158,19 @@ def flag_degenerate(rows, algorithms, factor):
         r['degenerate'] = not (1 / factor <= r['scale_vs_original'] <= factor)
 
 
-def summarize(rows):
+def summarize(rows, min_tracked_for_ate=0.5):
+    """Mediana e IQR por algoritmo × sequência × condição, e degradação do ATE em relação à original.
+
+    - `tracked_fraction` usa todas as execuções: as que não terminam `ok` já entram com 0, senão a mediana
+      de um grupo com 3 de 5 sementes perdidas sairia só das sementes boas.
+    - O ATE e o RPE só entram das execuções `ok` com fração rastreada >= `min_tracked_for_ate` (protocolo §4:
+      abaixo de 50% é falha, como no QueensCAMP). Sem isso o ATE de um trecho de 12% da trajetória parece
+      melhor que o da original (RGB-D em `condensation`).
+    - `success_rate`: fração das execuções que passam nessas duas condições.
+    """
+    def valid(r):
+        return r['status'] == 'ok' and (r.get('tracked_fraction') or 0.0) >= min_tracked_for_ate
+
     groups = {}
     for row in rows:
         groups.setdefault((row['algorithm'], row['sequence'], row['condition']), []).append(row)
@@ -162,9 +178,11 @@ def summarize(rows):
     for (algorithm, sequence, condition), items in sorted(groups.items()):
         out = {'algorithm': algorithm, 'sequence': sequence, 'condition': condition,
                'n_runs': len(items), 'n_ok': sum(r['status'] == 'ok' for r in items),
+               'n_valid': sum(valid(r) for r in items), 'success_rate': sum(valid(r) for r in items) / len(items),
                'n_degenerate': sum(bool(r.get('degenerate')) for r in items)}
         for name in SUMMARY_METRICS:
-            values = [r[name] for r in items if r.get(name) is not None and r['status'] == 'ok']
+            pool = items if name == 'tracked_fraction' else [r for r in items if valid(r)]
+            values = [r[name] for r in pool if r.get(name) is not None]
             values = [v for v in values if not np.isnan(v)]
             out[f'{name}_median'] = float(np.median(values)) if values else None
             out[f'{name}_iqr'] = float(np.subtract(*np.percentile(values, [75, 25]))) if values else None
@@ -199,7 +217,7 @@ def main():
     out = Path(cfg['paths']['results_root'])
     out.mkdir(parents=True, exist_ok=True)
     write_csv(rows, out / 'metrics.csv', RUN_FIELDS)
-    summary = summarize(rows)
+    summary = summarize(rows, cfg['evaluation'].get('min_tracked_for_ate', 0.5))
     write_csv(summary, out / 'summary.csv')
     print(f'{len(rows)} execuções avaliadas → {out / "metrics.csv"} e {out / "summary.csv"}')
     return 0
