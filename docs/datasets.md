@@ -1,6 +1,6 @@
 # Datasets
 
-Jira: NATASHA-24. Levantado em 10/10/2026 a partir dos artigos, do site e do código. As 16 sequências do QueensCAMP (*Full*) foram baixadas, verificadas e extraídas em 29/10/2026 no servidor do laboratório (seção "Registro local"). O SubT-MRS ainda não foi baixado.
+Jira: NATASHA-24. Levantado em 10/10/2026 a partir dos artigos, do site e do código. As 16 sequências do QueensCAMP (*Full*) foram baixadas, verificadas e extraídas em 29/10/2026 no servidor do laboratório (seção "Registro local"). O SubT-MRS (só a sequência de fumaça, 9,25 GB) foi baixado em 31/10/2026 (seção abaixo).
 
 ## QueensCAMP
 - **Site:** https://larocs.github.io/queenscamp-dataset · **Código:** https://github.com/larocs/queenscamp-dataset (MIT) · **Artigo:** arXiv:2410.12520 (ICAR 2025)
@@ -45,10 +45,11 @@ Jira: NATASHA-24. Levantado em 10/10/2026 a partir dos artigos, do site e do có
 - **Dados fora do git.** Os zips podem ser apagados depois que a matriz terminar, se faltar espaço: o `dataset.py download` baixa de novo.
 
 ## SubT-MRS (apenas para validar a fumaça)
-- **Site:** https://superodometry.com/datasets · **Artigo:** CVPR 2024, arXiv:2307.07607
-- **Sequência de interesse:** **Smoke Room** (RC car, 104,84 m; fisheye RGB + térmica + IMU).
-- **Uso:** extrair ~200 frames RGB com fumaça real, retificados ou recortados no centro, para comparar estatísticas com a fumaça sintética e calibrar a luz atmosférica A.
-- **A confirmar:** formato (rosbag?), tamanho, licença e calibração das fisheye.
+- **Site:** https://superodometry.com/datasets · **Artigo:** CVPR 2024, arXiv:2307.07607 · **Licença:** não declarada na página (por isso os quadros reais **não entram no repositório**, só métricas e o painel em `results/`, fora do git).
+- **Onde está:** a entrada "SmokeRoom" fica em "Sensor Fusion Challenge extension" (RGB, térmica e IMU, "visual degradation"). Os dados são pastas do Google Drive com um zip por sequência, nas versões *rosbag* e *extracted*. Baixado em 31/10/2026 só o zip *extracted* **`SubT_MRS_Hawkins_Smoke_Handheld.zip`**, **9,25 GB** (Drive id `140UJgOCa-2itHUZQfwOK1zISD8XRGw51`), em `/data/subtmrs_raw/` (fora do git). A página lista a plataforma como RC7, e o nome do arquivo diz *Handheld*; as imagens mostram uma plataforma no rodapé do quadro. Isso não afeta a validação da fumaça.
+- **Conteúdo** (`SmokeRoom_Folder/`): `cam_0/` com **10.290 PNG RGB de 640×480** e `timestamps.txt`, `thermal/` com 12.510 PNG, `imu/imu_data.csv`. As outras três câmeras RGB não estão no zip. Extraídos só `cam_0`, a térmica e a IMU não foram usadas. Intrínsecos e extrínsecos são arquivos separados do Drive (não baixados).
+- **Segmentos da `cam_0`** (índice do quadro; medidos pelo contraste e pelos pontos ORB): 0–2400 cena noturna com outra exposição; **2700–5300 limpo**; **5400–9000 fumaça** (a mais densa em 6300–8100); 9000 em diante limpo, com névoa residual no começo. A mesma cena (galpão) aparece limpa e com névoa, mas sem alinhamento quadro a quadro (carrinho em movimento), então **não existe SSIM com referência**.
+- **Resultado da validação:** `docs/nota_niveis_fumaca.md`, seção "Validação contra fumaça real".
 
 ## TartanAir (referência de domínio de treino)
 - Não é necessário baixar. Verificar na documentação se há ambientes com névoa ou fumaça (argumento de gap de domínio).
