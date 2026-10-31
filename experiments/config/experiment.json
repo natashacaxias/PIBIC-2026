@@ -3,20 +3,20 @@
   "dataset": {
     "root": "/data/queenscamp",
     "sequence_pattern": "{seq}",
-    "depth_dir": "depths",
-    "timestamps_file": "timestamps.txt",
-    "groundtruth_file": "groundtruth.txt",
+    "depth_dir": "depth",
+    "timestamps_file": "times.txt",
+    "groundtruth_file": "traj.txt",
     "depth_scale": 1000.0,
     "fps": 15
   },
   "camera": {
-    "fx": null,
-    "fy": null,
-    "cx": null,
-    "cy": null,
+    "fx": 465.63427734375,
+    "fy": 620.8928493923611,
+    "cx": 323.65799967447913,
+    "cy": 234.40109592013889,
     "width": 640,
     "height": 480,
-    "_comentario": "PREENCHER com os intrínsecos do arquivo 'Camera info' RGB do site, escalados para 640x480"
+    "_comentario": "K do rgb_camera_info.txt do site, que já está em 640x480 (resize anisotrópico já aplicado: fx*3 e fy/0,444 dão ~1397). NÃO reescalar de novo."
   },
   "paths": {
     "smoke_root": "/data/queenscamp_smoke",
@@ -27,15 +27,17 @@
   "sequences": ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16"],
   "conditions": {
     "original": {"kind": "queenscamp", "rgb_dir": "images"},
-    "underexposure": {"kind": "queenscamp", "rgb_dir": "PREENCHER_underexposure"},
-    "overexposure": {"kind": "queenscamp", "rgb_dir": "PREENCHER_overexposure"},
-    "breakage": {"kind": "queenscamp", "rgb_dir": "PREENCHER_breakage"},
-    "wet": {"kind": "queenscamp", "rgb_dir": "PREENCHER_wet"},
-    "condensation": {"kind": "queenscamp", "rgb_dir": "PREENCHER_condensation"},
-    "dirt": {"kind": "queenscamp", "rgb_dir": "PREENCHER_dirt"},
+    "underexposure": {"kind": "queenscamp", "rgb_dir": "underexposure"},
+    "overexposure": {"kind": "queenscamp", "rgb_dir": "overexposure"},
+    "breakage": {"kind": "queenscamp", "rgb_dir": "breakage"},
+    "wet": {"kind": "queenscamp", "rgb_dir": "wet"},
+    "condensation": {"kind": "queenscamp", "rgb_dir": "condensation"},
+    "dirt": {"kind": "queenscamp", "rgb_dir": "dirt"},
     "smoke_leve": {"kind": "smoke", "visibility_m": 60},
     "smoke_moderada": {"kind": "smoke", "visibility_m": 20},
     "smoke_densa": {"kind": "smoke", "visibility_m": 6},
+    "smoke_extrema": {"kind": "smoke", "visibility_m": 3, "enabled": false,
+                      "_comentario": "exploratória (NATASHA-41): só DPVO e TartanVO, que não quebram na densa; rodar com --conditions smoke_extrema. Fora das famílias de Bonferroni (evaluation.exploratory_conditions)"},
     "dcp_original": {"kind": "dehaze", "source": "original", "enabled": false,
                      "_comentario": "controle: efeito do DCP sem fumaça. Baseline da Sprint 8 (NATASHA-17); rodar com --conditions"},
     "dcp_smoke_leve": {"kind": "dehaze", "source": "smoke_leve", "enabled": false},
@@ -50,16 +52,30 @@
   },
   "repetitions": 5,
   "timeout_s": 3600,
+  "resources": {
+    "memory": "8g",
+    "cpus": 8,
+    "pids": 1024,
+    "min_free_gpu_mib": 10000,
+    "max_gpu_temp_c": 83,
+    "max_cpu_temp_c": 85,
+    "min_mem_available_gb": 12,
+    "min_disk_free_gb": 100,
+    "max_wait_min": 360,
+    "_comentario": "Teto por container e limites do host para a matriz longa (servidor compartilhado). Medido em 29/10 na seq. 14: DPVO 2 GiB de RAM, 1 núcleo, 3,3 GB de GPU, ~180 W e 60 °C; TartanVO 1 GiB e usa todos os núcleos que tiver: com 8 a CPU chegou a 90 °C, então o teto dele é 2 (4 também esquentava: 91 °C com 2 fatias de ORB-SLAM2 ao lado; as execuções feitas antes disso usaram 8 ou 4, o que fica no --cpus do meta.json, e o tempo por quadro não é comparável entre elas); o limite de 85 °C pausa a matriz entre execuções, mas não dentro de uma; ORB-SLAM2 0,4 GiB e ~0,6 núcleo por processo (4 em paralelo somam ~3 núcleos, pico de 4,8, e a CPU chega a 91 °C em picos curtos; override em cada algoritmo). Antes de cada execução a matriz espera, sem abortar, o host voltar aos limites; passados max_wait_min minutos ela para e é retomável."
+  },
   "algorithms_defaults": {
     "orbslam2": {"n_features": 1000, "th_depth": 40.0, "baseline_m": 0.05, "realtime": true}
   },
   "algorithms": {
-    "orbslam2_mono": {"image": "pibic/orbslam2:f2e6f51", "kind": "orbslam2", "mode": "mono", "monocular": true, "enabled": true},
+    "orbslam2_mono": {"image": "pibic/orbslam2:f2e6f51", "kind": "orbslam2", "mode": "mono", "monocular": true, "enabled": true,
+                      "resources": {"memory": "4g", "cpus": 4}},
     "orbslam2_rgbd": {"image": "pibic/orbslam2:f2e6f51", "kind": "orbslam2", "mode": "rgbd", "monocular": false, "enabled": true,
+                      "resources": {"memory": "4g", "cpus": 4},
                       "_comentario": "configuração usada no artigo do QueensCAMP (reprodução)"},
     "tartanvo": {"image": "pibic/tartanvo:ec2ecc3", "kind": "tartanvo", "monocular": true, "repetitions": 2, "enabled": true,
-                 "step_scale_only": true,
-                 "_comentario": "determinístico na inferência; 2 sementes só para confirmar. Saída sem escala consistente entre quadros: avaliar só com escala por passo"},
+                 "resources": {"cpus": 2},
+                 "_comentario": "determinístico na inferência; 2 sementes só para confirmar. O ATE primário é Sim(3), como o artigo (31/10: mediana 1,03x o artigo nas 16 sequências, contra 0,59x com escala por passo); a escala por passo fica em ate_stepscale_m"},
     "dpvo": {"image": "pibic/dpvo:0ac95b6", "kind": "dpvo", "monocular": true, "enabled": true},
     "droidvo": {"image": "pibic/droidslam:2dfd39f", "kind": "droid", "monocular": true, "enabled": false,
                 "_comentario": "alternativa ao DPVO; habilitar só se o DPVO não compilar"}
@@ -68,6 +84,10 @@
     "max_time_diff_s": 0.02,
     "rpe_delta_s": 1.0,
     "monocular_primary": "sim3",
-    "_comentario": "monocular_primary: sim3 ou stepscale (decidir com o orientador; ver docs/protocolo_experimental.md)"
+    "rgbd_primary": "sim3",
+    "min_tracked_for_ate": 0.5,
+    "exploratory_conditions": ["smoke_extrema", "dcp_original", "dcp_smoke_leve", "dcp_smoke_moderada", "dcp_smoke_densa"],
+    "degenerate_scale_factor": 2.0,
+    "_comentario": "monocular_primary e rgbd_primary: sim3, se3 (só RGB-D) ou stepscale (só monocular); decisão de 31/10 em docs/protocolo_experimental.md §10. min_tracked_for_ate: abaixo dessa fração rastreada a execução não entra no ATE. degenerate_scale_factor: fator f; em sensores métricos, escala Sim(3) fora de [1/f, f] vezes a mediana do original marca a execução como degenerada (heurística, limiar a validar)"
   }
 }

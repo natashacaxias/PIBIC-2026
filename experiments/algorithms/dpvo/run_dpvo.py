@@ -3,7 +3,8 @@
 Diferenças em relação ao demo.py oficial (princeton-vl/DPVO):
   - stride 1 (o demo usa 2), para comparar com os demais métodos quadro a quadro;
   - semente fixada e registrada; tempo por frame e pico de memória medidos;
-  - timestamps do dataset em vez do índice do frame.
+  - timestamps do dataset em vez do índice do frame;
+  - get_pose iterativo (pose_chain.py): o recursivo estoura o limite do Python com muitos quadros descartados seguidos.
 """
 import argparse
 import json
@@ -17,6 +18,11 @@ import torch
 
 from dpvo.config import cfg
 from dpvo.dpvo import DPVO
+from dpvo.lietorch import SE3
+
+from pose_chain import iterative_get_pose
+
+DPVO.get_pose = iterative_get_pose(SE3)
 
 
 def read_list(path):

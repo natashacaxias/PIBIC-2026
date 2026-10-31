@@ -6,7 +6,9 @@ D="$1"
 RUNNER="$2"
 
 # 1) GCC 7: usleep/getenv sem include explícito.
+#    Alguns arquivos (ex.: Optimizer.cc) começam com BOM UTF-8; inserir linhas antes dele o deixaria no meio do arquivo.
 for f in "$D"/src/*.cc "$D"/Examples/*/*.cc; do
+  sed -i '1s/^\xEF\xBB\xBF//' "$f"
   sed -i '1i #include <cstdlib>' "$f"
   sed -i '1i #include <unistd.h>' "$f"
 done

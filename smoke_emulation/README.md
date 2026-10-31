@@ -33,8 +33,7 @@ hazy = apply_smoke(rgb, depth_m, beta_from_visibility(20.0))
 
 ## Pendências
 - Rodar em sequências reais do QueensCAMP e conferir visualmente (máquina do laboratório).
-- Calibrar a luz atmosférica A com frames reais do SubT-MRS (NATASHA-12).
-- Validar realismo com métricas sem referência (BRISQUE, contraste, dark channel) contra fumaça real (NATASHA-12).
+- ~~Calibrar a luz atmosférica A com frames reais do SubT-MRS~~ e ~~validar com métricas sem referência~~: feito em 31/10, A = 0,8 mantido (`docs/nota_niveis_fumaca.md`). Falta o BRISQUE (`piq`).
 
 Justificativa dos níveis: `docs/nota_niveis_fumaca.md`.
 

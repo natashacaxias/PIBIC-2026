@@ -44,11 +44,7 @@ docker build -t pibic/dpvo:0ac95b6 algorithms/dpvo 2>&1 | tee build_dpvo.log
 - [ ] `depth_dir`, `timestamps_file`, `groundtruth_file`.
 - [ ] `rgb_dir` de cada falha (os campos `PREENCHER_...`).
 - [ ] `depth_scale`: o valor cuja mediana de profundidade fica entre 1 e 5 m.
-- [ ] **Intrínsecos — atenção.** O QueensCAMP redimensiona de 1920×1080 para 640×480 **com escalas diferentes em x e em y**. A partir do arquivo `camera_info_rgb`:
-  - `fx' = fx × 640/1920`
-  - `cx' = cx × 640/1920`
-  - `fy' = fy × 480/1080`
-  - `cy' = cy × 480/1080`
+- [x] **Intrínsecos — não reescalar.** O `rgb_camera_info.txt` do site **já está em 640×480** (K = fx 465,63; fy 620,89; cx 323,66; cy 234,40), com o resize anisotrópico de 1920×1080 aplicado (fx×3 e fy÷0,444 dão ambos ≈ 1397). Usar os valores como estão; aplicar `640/1920` e `480/1080` de novo contaria a escala duas vezes.
 
 ### 6. Testar a GPU
 ```bash
@@ -91,7 +87,7 @@ Abrir alguns quadros dos três níveis e anotar a transmissão média que aparec
 
 ## Depois que o piloto funcionar
 ```bash
-.venv/bin/python scripts/dataset.py download --dest /data/queenscamp_raw --kind full   # ~93 GB restantes
+.venv/bin/python scripts/dataset.py download --dest /data/queenscamp_raw --kind full   # ~93 GiB restantes (feito em 29/10, ver datasets.md)
 .venv/bin/python scripts/dataset.py smoke
 # no tmux, GPU e CPU em paralelo (~13 h de GPU e ~53 h de CPU):
 .venv/bin/python scripts/run_matrix.py --algorithms dpvo tartanvo > gpu.log 2>&1
