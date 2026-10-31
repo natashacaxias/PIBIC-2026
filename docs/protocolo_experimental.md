@@ -83,8 +83,10 @@ Decisões de trabalho tomadas com Claude no papel de orientador, a pedido da Nat
 |---|---|---|---|---|---|
 | TartanVO | **Sim(3)** | **1,03** | **12%** | 0,76 | 16 |
 | TartanVO | escala por passo | 0,59 | 41% | 0,76 | 16 |
-| ORB-SLAM2 RGB-D | **Sim(3)** | **1,00** | **24%** | 0,68 | 13 |
-| ORB-SLAM2 RGB-D | SE(3) | 1,17 | 33% | 0,64 | 13 |
+| ORB-SLAM2 RGB-D | **Sim(3)** | **1,04** | **17%** | 0,92 | 11 |
+| ORB-SLAM2 RGB-D | SE(3) | 1,31 | 31% | 0,87 | 11 |
+
+As 11 sequências são as que têm valor no artigo e rastreamento ≥ 50% na nossa execução, a mesma regra que os autores aplicam. (A primeira versão desta tabela incluía 13 sequências porque contava o ATE de execuções com rastreamento < 50%: Sim(3) 1,00 / 24% / 0,68 e SE(3) 1,17 / 33% / 0,64. Corrigido em 31/10, ao montar a Tab. 1 do artigo; a conclusão não muda, o Sim(3) continua mais perto do artigo.)
 
 O script do artigo usa `correct_scale` opcional; o resultado indica que foi ligado. Um alinhamento só para todos também deixa a comparação entre métodos justa, que a nota de `docs/leituras/2024_bruno_queenscamp.md` já pedia.
 
