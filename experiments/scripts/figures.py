@@ -35,11 +35,11 @@ MARKERS = ['o', 's', '^', 'D', 'v', 'P', 'X', '*']
 TEXT, TEXT_2, GRID, SURFACE = '#0b0b0b', '#52514e', '#e4e3df', '#fcfcfb'
 DIVERGING = LinearSegmentedColormap.from_list('azul_cinza_vermelho', ['#1c5cab', '#86b6ef', '#f0efec', '#ec8f8e', '#b3292a'])
 CONDITION_ORDER = ['original', 'underexposure', 'overexposure', 'breakage', 'wet', 'condensation', 'dirt',
-                   'smoke_leve', 'smoke_moderada', 'smoke_densa',
+                   'smoke_leve', 'smoke_moderada', 'smoke_densa', 'smoke_extrema',
                    'dcp_original', 'dcp_smoke_leve', 'dcp_smoke_moderada', 'dcp_smoke_densa']
 LABELS = {'original': 'original', 'underexposure': 'subexp.', 'overexposure': 'superexp.', 'breakage': 'quebra',
           'wet': 'molhada', 'condensation': 'condens.', 'dirt': 'sujeira', 'smoke_leve': 'fumaça L',
-          'smoke_moderada': 'fumaça M', 'smoke_densa': 'fumaça D', 'dcp_original': 'DCP orig.',
+          'smoke_moderada': 'fumaça M', 'smoke_densa': 'fumaça D', 'smoke_extrema': 'fumaça E', 'dcp_original': 'DCP orig.',
           'dcp_smoke_leve': 'DCP L', 'dcp_smoke_moderada': 'DCP M', 'dcp_smoke_densa': 'DCP D'}
 
 

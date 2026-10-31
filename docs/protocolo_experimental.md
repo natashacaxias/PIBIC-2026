@@ -1,6 +1,6 @@
-# Protocolo experimental — v0.2 (decisões de 31/10 a confirmar com o orientador)
+# Protocolo experimental — v0.2 (decisões de trabalho de 31/10)
 
-Jira: NATASHA-26. Escrito em 10/10/2026 a partir das leituras (`docs/leituras/`) e do código dos algoritmos. Os itens marcados com [decidir] foram decididos em 31/10, depois da matriz completa, a pedido da Natasha e **com Claude no papel de orientador** (§10); são decisões provisórias, com os dados que as sustentam, e **precisam ser confirmadas pelo orientador de verdade**. A implementação está em `experiments/`.
+Jira: NATASHA-26. Escrito em 10/10/2026 a partir das leituras (`docs/leituras/`) e do código dos algoritmos. Os itens marcados com [decidir] foram decididos em 31/10, depois da matriz completa, como decisões de trabalho da Natasha, **com Claude no papel de orientador** (§10). A execução não espera revisão: cada decisão traz os dados que a sustentam e como reverter. O orientador de verdade ainda não as revisou. A implementação está em `experiments/`.
 
 ## 1. Perguntas
 1. **Reprodução:** reproduzimos os números do QueensCAMP para ORB-SLAM2 (RGB-D) e TartanVO? (objetivo específico 1)
@@ -71,10 +71,10 @@ São **2.720 execuções**. As de GPU e as de CPU podem rodar em paralelo (dois 
 2. Critério de robustez relativo e o valor de X: usado X = 50 e o veredito não mudou com nenhum dos alinhamentos (§10.1); confirmar o valor.
 3. ~~Ritmo de tempo real do ORB-SLAM2~~: mantido (a matriz inteira rodou assim, em ~43 h).
 4. Adotar o SLAM Adversarial Lab (Koschmieder já implementado) ou manter o módulo próprio; ver `docs/trabalhos_relacionados.md`.
-5. Restam as decisões provisórias de §10 para o orientador de verdade confirmar.
+5. As decisões de trabalho de §10 seguem valendo; o orientador pode revisá-las depois (todas são reversíveis).
 
 ## 10. Decisões de 31/10 depois da matriz completa (provisórias)
-Tomadas com Claude no papel de orientador, a pedido da Natasha, a partir dos dados das 2720 execuções. Não são do orientador de verdade: cada uma diz o que a sustenta e o que muda se ele discordar.
+Decisões de trabalho tomadas com Claude no papel de orientador, a pedido da Natasha, a partir dos dados das 2720 execuções, e seguidas sem esperar revisão. O orientador de verdade ainda não as viu: cada uma diz o que a sustenta e o que muda se ele discordar.
 
 ### 10.1 Alinhamento: Sim(3) para todos os algoritmos
 **Evidência (reprodução do QueensCAMP, condição original, mediana das sementes por sequência):**
@@ -124,7 +124,10 @@ A escala Sim(3) do RGB-D na original não é constante: nas 11 sequências com r
 ### 10.6 Fumaça: manter V = 60 / 20 / 6 m; calibração do A não é bloqueio; adicionar um nível exploratório
 Transmissão média medida (média dos quadros, 16 sequências; `smoke_meta.json`): **leve 0,87 (0,84–0,91), moderada 0,68 (0,60–0,76), densa 0,32 (0,24–0,42)**, mais suave que os 0,81 / 0,56 / 0,20 estimados em `nota_niveis_fumaca.md` (as profundidades reais são menores). O que as execuções mostram: o ORB-SLAM2 RGB-D vai de 62% de sucesso na moderada (t̄ 0,68) a 0% na densa (t̄ 0,32), e o DPVO e o TartanVO **não chegam a quebrar** nem na densa (+2,6% a +5,7%). Logo:
 - O parâmetro **A** desloca o brilho médio; o contraste cai com t. A calibração com o SubT-MRS valida o realismo, mas não muda o t̄ por nível, e é o t̄ que governa a perda de *features*. Fica **sem bloqueio**; continua dependendo do dado do SubT-MRS (NATASHA-24).
-- Para achar o ponto de quebra dos métodos aprendidos, **adicionar um nível exploratório `smoke_extrema` (V = 3 m, t̄ a medir) só para DPVO e TartanVO** (ORB-SLAM2 já falha em 100% na densa). Fica fora das famílias de Bonferroni da análise principal. Custo estimado: 16 sequências × 7 execuções, algumas horas de GPU. **Não foi executado**; subtarefa NATASHA-41.
+- Para achar o ponto de quebra dos métodos aprendidos, **adicionar um nível exploratório `smoke_extrema` (V = 3 m, t̄ a medir) só para DPVO e TartanVO** (ORB-SLAM2 já falha em 100% na densa). Fica fora das famílias de Bonferroni da análise principal. Custo estimado: 16 sequências × 7 execuções, algumas horas de GPU. Em execução desde 31/10 (NATASHA-41); a condição `smoke_extrema` está em `evaluation.exploratory_conditions` e sai em `stats_exploratory.csv`, fora das famílias de Bonferroni. Na seq. 09 a transmissão média é 0,16 (a densa tem 0,34 nessa sequência).
 
 ### 10.7 Condições com DCP: piloto na seq. 09 antes de qualquer execução em massa
-As 4 condições `dcp_*` (272 execuções cada, **1088 no total, cerca de 17 h**) ficam desligadas. Primeiro um **piloto na seq. 09** (gerar as 4 condições, rodar os 4 algoritmos com as repetições do protocolo), para validar a geração e ver se o DCP ajuda, piora ou é neutro; só então decidir o escopo da execução completa. Motivos: o ORB-SLAM2 já falha em 100% na fumaça densa (o DCP precisa recuperar o rastreamento para mostrar efeito), e gerar o DCP antes de fechar os níveis de fumaça (§10.6) obrigaria a repetir. Não foi executado; subtarefa NATASHA-42 (sob o NATASHA-17).
+As 4 condições `dcp_*` (272 execuções cada, **1088 no total, cerca de 17 h**) ficam desligadas. Primeiro um **piloto na seq. 09** (gerar as 4 condições, rodar os 4 algoritmos com as repetições do protocolo), para validar a geração e ver se o DCP ajuda, piora ou é neutro; só então decidir o escopo da execução completa. Motivos: o ORB-SLAM2 já falha em 100% na fumaça densa (o DCP precisa recuperar o rastreamento para mostrar efeito), e gerar o DCP antes de fechar os níveis de fumaça (§10.6) obrigaria a repetir. Piloto em execução desde 31/10 (NATASHA-42, sob o NATASHA-17); as 4 condições `dcp_*` estão em `exploratory_conditions` durante o piloto e saem de lá quando o DCP completo rodar.
+
+### 10.8 Critério de robustez: X = 50% mantido
+Variando X entre 25%, 50% e 100% (`stats_analysis.py --max-degradation`), **38 das 40 combinações algoritmo × condição mantêm o veredito**. As duas que mudam são o TartanVO em `breakage` (81% de degradação mediana) e `dirt` (68%), que só viram robustas com X = 100. O 50% fica no meio de uma faixa estável (nenhum veredito muda entre 25% e 50%), então a escolha não decide nenhuma conclusão do artigo.

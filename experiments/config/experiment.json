@@ -36,6 +36,8 @@
     "smoke_leve": {"kind": "smoke", "visibility_m": 60},
     "smoke_moderada": {"kind": "smoke", "visibility_m": 20},
     "smoke_densa": {"kind": "smoke", "visibility_m": 6},
+    "smoke_extrema": {"kind": "smoke", "visibility_m": 3, "enabled": false,
+                      "_comentario": "exploratória (NATASHA-41): só DPVO e TartanVO, que não quebram na densa; rodar com --conditions smoke_extrema. Fora das famílias de Bonferroni (evaluation.exploratory_conditions)"},
     "dcp_original": {"kind": "dehaze", "source": "original", "enabled": false,
                      "_comentario": "controle: efeito do DCP sem fumaça. Baseline da Sprint 8 (NATASHA-17); rodar com --conditions"},
     "dcp_smoke_leve": {"kind": "dehaze", "source": "smoke_leve", "enabled": false},
@@ -84,6 +86,7 @@
     "monocular_primary": "sim3",
     "rgbd_primary": "sim3",
     "min_tracked_for_ate": 0.5,
+    "exploratory_conditions": ["smoke_extrema", "dcp_original", "dcp_smoke_leve", "dcp_smoke_moderada", "dcp_smoke_densa"],
     "degenerate_scale_factor": 2.0,
     "_comentario": "monocular_primary e rgbd_primary: sim3, se3 (só RGB-D) ou stepscale (só monocular); decisão de 31/10 em docs/protocolo_experimental.md §10. min_tracked_for_ate: abaixo dessa fração rastreada a execução não entra no ATE. degenerate_scale_factor: fator f; em sensores métricos, escala Sim(3) fora de [1/f, f] vezes a mediana do original marca a execução como degenerada (heurística, limiar a validar)"
   }

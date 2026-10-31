@@ -21,6 +21,11 @@ try:
 except ImportError:  # evo é dependência do host do laboratório
     evaluate = None
 
+try:
+    import stats_analysis
+except ImportError:  # scipy também
+    stats_analysis = None
+
 
 def make_config(tmp):
     cfg = json.loads((ROOT / 'config/experiment.json').read_text())
@@ -410,3 +415,34 @@ class MetricTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+@unittest.skipIf(stats_analysis is None, 'scipy não instalado')
+class ExploratoryConditionTests(unittest.TestCase):
+    def rows(self):
+        out = []
+        for algorithm in ('dpvo', 'tartanvo', 'orbslam2_rgbd'):
+            for seq in range(8):
+                for condition, ate in (('original', 0.2), ('smoke_densa', 0.21), ('smoke_extrema', 0.8)):
+                    if algorithm == 'orbslam2_rgbd' and condition == 'smoke_extrema':
+                        continue  # o ORB-SLAM2 não roda a exploratória
+                    out.append(dict(algorithm=algorithm, sequence=f'{seq:02d}', condition=condition,
+                                    ate_m_median=ate + 0.01 * seq, tracked_fraction_median=1.0,
+                                    ate_degradation_pct=0.0 if condition == 'original' else 100 * (ate - 0.2) / 0.2))
+        return out
+
+    def test_exploratory_condition_stays_out_of_the_main_families(self):
+        main, exploratory = stats_analysis.split_exploratory(self.rows(), ['smoke_extrema'])
+        self.assertNotIn('smoke_extrema', {r['condition'] for r in main})
+        self.assertEqual({r['algorithm'] for r in exploratory}, {'dpvo', 'tartanvo'})  # original só de quem a tem
+        self.assertEqual({r['condition'] for r in exploratory}, {'original', 'smoke_extrema'})
+        # os testes principais não mudam de tamanho com a exploratória presente
+        self.assertEqual(len(stats_analysis.vs_original(main, n_boot=50)), 3 * 1)
+
+    def test_exploratory_results_have_their_own_bonferroni_family(self):
+        results = stats_analysis.exploratory_results(self.rows(), ['smoke_extrema'], n_boot=50)
+        self.assertEqual({(r['algorithm'], r['condition']) for r in results},
+                         {('dpvo', 'smoke_extrema'), ('tartanvo', 'smoke_extrema')})
+        self.assertTrue(all(r['m_tests'] == 2 for r in results))
+        self.assertTrue(all(r['robust'] is False for r in results))  # +300% de degradação
+        self.assertEqual(stats_analysis.exploratory_results(self.rows(), [], n_boot=50), [])
