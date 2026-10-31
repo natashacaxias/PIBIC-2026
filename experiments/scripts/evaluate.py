@@ -109,11 +109,29 @@ def is_static(est, tol_m=1e-6):
     return len(np.unique(np.round(est.positions_xyz / tol_m), axis=0)) < 3
 
 
+def frames_latency(run_dir):
+    """Média de `track_ms` do frames.csv do ORB-SLAM2 (só o tracking, sem as threads de mapeamento).
+
+    O wrapper do ORB-SLAM2 não grava `mean_ms_per_frame` no meta.json; o `--realtime` espera depois de medir,
+    então o ritmo de 15 fps não entra no valor. None se o arquivo não existe ou ficou vazio (queda do processo).
+    """
+    path = Path(run_dir) / 'frames.csv'
+    if not path.exists():
+        return None
+    with open(path, newline='', encoding='utf-8') as f:
+        values = [float(r['track_ms']) for r in csv.DictReader(f) if r.get('track_ms')]
+    return float(np.mean(values)) if values else None
+
+
 def evaluate_run(cfg, meta):
     algo_meta = meta.get('algo') or {}
     row = {k: meta.get(k) for k in ('algorithm', 'sequence', 'condition', 'seed', 'status', 'n_frames', 'wall_s')}
     row['mean_ms_per_frame'] = algo_meta.get('mean_ms_per_frame')
+    if row['mean_ms_per_frame'] is None and cfg['algorithms'][meta['algorithm']]['kind'] == 'orbslam2':
+        row['mean_ms_per_frame'] = frames_latency(meta['run_dir'])
     row['peak_gpu_mib'] = algo_meta.get('peak_gpu_mib', meta.get('peak_gpu_mib_host'))
+    if cfg['algorithms'][meta['algorithm']]['kind'] == 'orbslam2':
+        row['peak_gpu_mib'] = None  # roda só em CPU; o valor do host seria ruído de outros processos
     if meta['status'] != 'ok':
         row['tracked_fraction'] = 0.0
         return row

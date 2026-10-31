@@ -372,6 +372,15 @@ class MetricTests(unittest.TestCase):
         self.assertAlmostEqual(summary['breakage']['ate_degradation_pct'], 100.0)
         self.assertEqual(summary['condensation']['n_valid'], 0)
 
+    def test_orbslam2_latency_comes_from_frames_csv(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = Path(tmp)
+            self.assertIsNone(evaluate.frames_latency(run))  # sem frames.csv
+            (run / 'frames.csv').write_text('timestamp,tracking_state,track_ms\n')
+            self.assertIsNone(evaluate.frames_latency(run))  # processo caiu, arquivo vazio
+            (run / 'frames.csv').write_text('timestamp,tracking_state,track_ms\n1.0,2,10.0\n1.1,2,20.0\n1.2,3,30.0\n')
+            self.assertAlmostEqual(evaluate.frames_latency(run), 20.0)
+
     def test_static_trajectory_is_detected(self):
         # DPVO em wet/condensation: poses todas iguais, o Umeyama não tem solução
         t = np.linspace(0, 2 * np.pi, 60)

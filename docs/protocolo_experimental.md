@@ -31,7 +31,7 @@ Jira: NATASHA-26. Escrito em 10/10/2026 a partir das leituras (`docs/leituras/`)
 | ATE RMSE | **Sim(3) para todos os algoritmos** (decisão de 31/10, §10.1); SE(3) no RGB-D (`ate_se3_m`) e escala por passo nos monoculares (`ate_stepscale_m`) ficam gravados para a análise de sensibilidade |
 | ATE com escala por passo | todos os monoculares, secundária (ver abaixo) |
 | RPE | Δ = 1 s (15 quadros): translação (m e % do deslocamento) e rotação (°) |
-| Latência | ms por quadro (média e mediana), medida dentro do wrapper |
+| Latência | ms por quadro (média por execução), medida dentro do wrapper; no ORB-SLAM2 é só o tracking (`track_ms` do `frames.csv`, sem as threads de mapeamento) |
 | Memória GPU | pico do `torch.cuda.max_memory_allocated` + amostragem do `nvidia-smi` |
 
 **Escala do TartanVO:** sem o arquivo de poses, a translação de cada passo tem magnitude arbitrária (a perda de treino é até-escala). O script oficial **substitui a norma de cada passo pela do ground truth**, e um Sim(3) com escala única não corrige isso. Mesmo assim, nas 16 sequências o Sim(3) fica a 1,03x do artigo (mediana) e a escala por passo a 0,59x (§10.1), então o QueensCAMP provavelmente usou Sim(3). O `evaluate.py` calcula a "ATE com escala por passo" para todos os monoculares como análise de sensibilidade. Nos testes sintéticos, essa métrica amplifica ruído quadro a quadro.
@@ -131,3 +131,15 @@ As 4 condições `dcp_*` (272 execuções cada, **1088 no total, cerca de 17 h**
 
 ### 10.8 Critério de robustez: X = 50% mantido
 Variando X entre 25%, 50% e 100% (`stats_analysis.py --max-degradation`), **38 das 40 combinações algoritmo × condição mantêm o veredito**. As duas que mudam são o TartanVO em `breakage` (81% de degradação mediana) e `dirt` (68%), que só viram robustas com X = 100. O 50% fica no meio de uma faixa estável (nenhum veredito muda entre 25% e 50%), então a escolha não decide nenhuma conclusão do artigo.
+
+### 10.9 Latência e memória (31/10)
+O `evaluate.py` não preenchia a latência das 1600 execuções do ORB-SLAM2 (o wrapper não grava `mean_ms_per_frame`); agora ela sai do `frames.csv`. A coluna de memória de GPU do ORB-SLAM2 passou a ficar vazia (CPU só; o valor era ruído do host). Medianas das execuções `ok` na condição original:
+
+| algoritmo | ms por quadro | memória de GPU (pico, MiB) | observação |
+|---|---|---|---|
+| DPVO | 29,3 (p90 30,4) | 710 | |
+| TartanVO | **22,1** com 8 CPUs (n = 6), **80,3** com 2 CPUs (n = 26) | 237 | o tempo depende do `--cpus` do container (8, 4 ou 2); só compare no mesmo valor |
+| ORB-SLAM2 RGB-D | 12,9 | n/a | só tracking, CPU |
+| ORB-SLAM2 mono | 9,5 | n/a | só tracking, CPU |
+
+Os valores não são comparáveis entre as famílias (o DPVO e o TartanVO medem a inferência inteira; o ORB-SLAM2, só o tracking). O pico de RAM por execução não foi gravado; as medidas do spike (`ambiente.md`) são ~2 GiB no DPVO, ~1 GiB no TartanVO e ~0,4 GiB no ORB-SLAM2.
