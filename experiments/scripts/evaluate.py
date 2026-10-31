@@ -96,6 +96,16 @@ def trajectory_metrics(ref, est, monocular, delta, primary='sim3'):
     return out
 
 
+def is_static(est, tol_m=1e-6):
+    """Trajetória sem deslocamento: menos de 3 posições distintas, nada que dê para alinhar ao ground truth.
+
+    O DPVO termina 'ok' com isso em `wet` e `condensation` (18 execuções; uma delas com 2 posições a 1,5 cm uma da
+    outra): o algoritmo não falha, mas também não rastreia nada, e o alinhamento de Umeyama não existe (covariância
+    degenerada). Conta como perda de rastreamento.
+    """
+    return len(np.unique(np.round(est.positions_xyz / tol_m), axis=0)) < 3
+
+
 def evaluate_run(cfg, meta):
     algo_meta = meta.get('algo') or {}
     row = {k: meta.get(k) for k in ('algorithm', 'sequence', 'condition', 'seed', 'status', 'n_frames', 'wall_s')}
@@ -111,6 +121,10 @@ def evaluate_run(cfg, meta):
         ref, est = sync.associate_trajectories(gt, est, cfg['evaluation']['max_time_diff_s'])
         row['n_matched'] = ref.num_poses
         row['tracked_fraction'] = ref.num_poses / meta['n_frames']
+        if is_static(est):
+            row['status'], row['tracked_fraction'] = 'tracking_lost', 0.0
+            row['error'] = 'trajetória estática: todas as poses na mesma posição'
+            return row
         delta = max(1, round(cfg['evaluation']['rpe_delta_s'] * cfg['dataset']['fps']))
         algo = cfg['algorithms'][meta['algorithm']]
         primary = 'stepscale' if algo.get('step_scale_only') else cfg['evaluation']['monocular_primary']

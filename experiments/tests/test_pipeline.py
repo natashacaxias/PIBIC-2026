@@ -331,6 +331,15 @@ class MetricTests(unittest.TestCase):
         self.assertLess(m['ate_sim3_m'], 1e-6)
         self.assertAlmostEqual(m['sim3_scale'], 0.5, places=3)
 
+    def test_static_trajectory_is_detected(self):
+        # DPVO em wet/condensation: poses todas iguais, o Umeyama não tem solução
+        t = np.linspace(0, 2 * np.pi, 60)
+        self.assertTrue(evaluate.is_static(trajectory(np.zeros((60, 3)), t)))
+        two_points = np.zeros((60, 3))
+        two_points[30:, 0] = 0.015  # 2 posições distintas, como o DPVO 11/wet/seed1
+        self.assertTrue(evaluate.is_static(trajectory(two_points, t)))
+        self.assertFalse(evaluate.is_static(trajectory(self.gt_positions, t)))
+
     def test_flag_degenerate_uses_original_scale_of_metric_sensors(self):
         algos = {'rgbd': {'monocular': False}, 'mono': {'monocular': True}}
 
