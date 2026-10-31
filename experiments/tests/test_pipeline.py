@@ -455,3 +455,28 @@ class ExploratoryConditionTests(unittest.TestCase):
         self.assertTrue(all(r['m_tests'] == 2 for r in results))
         self.assertTrue(all(r['robust'] is False for r in results))  # +300% de degradação
         self.assertEqual(stats_analysis.exploratory_results(self.rows(), [], n_boot=50), [])
+
+    def test_dcp_is_compared_with_its_source_condition_and_success_rate(self):
+        rows = []
+        for seq in range(8):
+            for condition, ate in (('smoke_densa', 0.3), ('dcp_smoke_densa', 0.2)):
+                rows.append(dict(algorithm='dpvo', sequence=f'{seq:02d}', condition=condition, n_runs=5, n_valid=5,
+                                 ate_m_median=ate + 0.01 * seq))
+            # o RGB-D não tem ATE na fumaça densa (0 execuções válidas) e recupera com o DCP
+            rows.append(dict(algorithm='orbslam2_rgbd', sequence=f'{seq:02d}', condition='smoke_densa', n_runs=5,
+                             n_valid=0, ate_m_median=None))
+            rows.append(dict(algorithm='orbslam2_rgbd', sequence=f'{seq:02d}', condition='dcp_smoke_densa', n_runs=5,
+                             n_valid=5, ate_m_median=0.15))
+        # a origem tem uma sequência a mais, que o DCP não cobre: não entra na taxa de sucesso
+        rows.append(dict(algorithm='orbslam2_rgbd', sequence='99', condition='smoke_densa', n_runs=5, n_valid=5,
+                         ate_m_median=0.1))
+        results = {r['algorithm']: r for r in
+                   stats_analysis.dcp_vs_source(rows, {'dcp_smoke_densa': 'smoke_densa'}, n_boot=50)}
+        dpvo, rgbd = results['dpvo'], results['orbslam2_rgbd']
+        self.assertEqual(dpvo['n'], 8)
+        self.assertAlmostEqual(dpvo['median_diff'], -0.1)
+        self.assertIsNotNone(dpvo['p'])
+        self.assertEqual((dpvo['success_rate_dcp'], dpvo['success_rate_source']), (1.0, 1.0))
+        self.assertEqual(rgbd['n'], 0)  # nada a parear, mas a recuperação aparece na taxa de sucesso
+        self.assertEqual((rgbd['success_rate_dcp'], rgbd['success_rate_source']), (1.0, 0.0))
+        self.assertEqual(stats_analysis.dcp_vs_source(rows, {}, n_boot=50), [])
