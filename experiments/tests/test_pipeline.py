@@ -199,6 +199,20 @@ class HardwareTests(unittest.TestCase):
             log.unlink()
             self.assertFalse(run_matrix.empty_map_at_save(tmp, 4))
 
+    def test_crashed_after_reset_reads_stdout_when_frames_csv_is_empty(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / 'frames.csv').write_text('')  # a queda descarta o buffer
+            log = Path(tmp) / 'stdout.log'
+            log.write_text('New map created with 381 points\nTrack lost soon after initialisation, reseting...\n'
+                           'System Reseting\nReseting Database... done\nNew map created with 250 points\n')
+            self.assertTrue(run_matrix.crashed_after_reset(tmp))
+            log.write_text('New map created with 381 points\n')  # caiu sem nunca resetar: segue failed
+            self.assertFalse(run_matrix.crashed_after_reset(tmp))
+            log.write_text('System Reseting\n\nSaving camera trajectory to /x/trajectory_tum.txt ...\n')  # caso de empty_map_at_save
+            self.assertFalse(run_matrix.crashed_after_reset(tmp))
+            log.unlink()
+            self.assertFalse(run_matrix.crashed_after_reset(tmp))
+
     def test_failure_streak_counts_only_failed_and_timeout(self):
         streak = 0
         for status in ('failed', 'timeout', 'failed'):

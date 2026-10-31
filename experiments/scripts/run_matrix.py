@@ -225,6 +225,16 @@ def empty_map_at_save(run_dir, n_frames):
     return bool(lines) and lines[-1].startswith('Saving camera trajectory')
 
 
+def crashed_after_reset(run_dir):
+    """ORB-SLAM2 que perdeu o rastreamento logo após inicializar, resetou o mapa e caiu antes de terminar os
+    quadros (RGB-D, 09/smoke_densa: as 5 sementes caem no mesmo endereço, dentro do libpthread). O frames.csv
+    fica vazio porque a queda perde o buffer, então a detecção usa o stdout.log: houve "System Reseting" e a
+    execução não chegou a "Saving camera trajectory"."""
+    log = Path(run_dir) / 'stdout.log'
+    text = log.read_text(encoding='utf-8', errors='replace') if log.exists() else ''
+    return 'System Reseting' in text and 'Saving camera trajectory' not in text
+
+
 def prepare_inputs(cfg, run, algo):
     run_dir = Path(run['run_dir'])
     inputs = run_dir / 'input'
@@ -283,7 +293,7 @@ def execute(cfg, run, algo, timeout, shard=None):
     monitor = GpuMonitor()
     monitor.start()
     started, t0 = datetime.now(timezone.utc).isoformat(), time.monotonic()
-    status, returncode = 'failed', None
+    status, returncode, status_note = 'failed', None, None
     traj = run_dir / 'trajectory_tum.txt'
     with open(run_dir / 'stdout.log', 'w', encoding='utf-8') as log:
         try:
@@ -297,6 +307,10 @@ def execute(cfg, run, algo, timeout, shard=None):
             elif algo['kind'] == 'orbslam2' and returncode == 139 and empty_map_at_save(run_dir, len(frames)):
                 # inicializou por poucos quadros, perdeu o rastreamento e terminou com o mapa resetado: mesmo segfault
                 status = 'tracking_lost'
+            elif algo['kind'] == 'orbslam2' and returncode == 139 and crashed_after_reset(run_dir):
+                # perdeu o rastreamento, resetou e segfaultou no meio da execução; não há trajetória a avaliar
+                status = 'tracking_lost'
+                status_note = 'segfault do ORB-SLAM2 depois de resetar o mapa; stdout.log termina após "System Reseting"'
         except subprocess.TimeoutExpired:
             status = 'timeout'
     wall = time.monotonic() - t0
@@ -304,6 +318,8 @@ def execute(cfg, run, algo, timeout, shard=None):
                 hardware_start=hardware, shard=shard, peak_gpu_mib_host=monitor.stop(), n_frames=len(frames), started_at=started,
                 finished_at=datetime.now(timezone.utc).isoformat(), command=shlex.join(cmd),
                 repo_sha=git_sha(), condition_meta=condition_meta)
+    if status_note:
+        meta['status_note'] = status_note
     algo_meta = run_dir / 'algo_meta.json'
     if algo_meta.exists():
         meta['algo'] = json.loads(algo_meta.read_text())
