@@ -32,10 +32,10 @@ Koschmieder, com um dataset piloto coletado em Manaus.
 Dados brutos, corpus SQLite, PDFs, saídas e ambientes virtuais **não** são versionados
 (ver `.gitignore`).
 
-## Estado do projeto (31/10/2026)
+## Estado do projeto (01/11/2026)
 
-- **Matriz principal concluída:** 2.720 execuções (ORB-SLAM2 monocular e RGB-D, TartanVO, DPVO × 16 sequências do QueensCAMP × 10 condições), mais 112 execuções de uma fumaça extrema e 68 de um piloto de dehazing. Resultados e decisões de análise em [`docs/protocolo_experimental.md`](docs/protocolo_experimental.md) §10; rascunho do artigo, com tabelas, em [`docs/artigo_esqueleto.md`](docs/artigo_esqueleto.md).
-- **Em andamento:** dehazing (DCP) completo no ORB-SLAM2 (NATASHA-43).
+- **Execuções concluídas:** 3.350 avaliadas. Matriz principal de 2.720 (ORB-SLAM2 monocular e RGB-D, TartanVO, DPVO × 16 sequências do QueensCAMP × 10 condições), 112 de uma fumaça extrema e 518 de dehazing (DCP): piloto na seq. 09 e execução completa no ORB-SLAM2. Resultados e decisões de análise em [`docs/protocolo_experimental.md`](docs/protocolo_experimental.md) §10; rascunho do artigo, com tabelas, em [`docs/artigo_esqueleto.md`](docs/artigo_esqueleto.md).
+- **DCP no ORB-SLAM2:** devolve o rastreamento ao RGB-D na fumaça densa (sucesso de 0% para 62,5%), não recupera o monocular e o prejudica na imagem limpa (§10.7).
 - **Bloqueado por coleta física:** dataset piloto amazônico e EKF (NATASHA-13/14).
 - As decisões de análise de §10 são de trabalho e **ainda não foram revisadas pelo orientador**.
 

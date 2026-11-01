@@ -2,7 +2,7 @@
 
 Jira: NATASHA-20. **Template e venue a definir com o orientador**: a proposta cita SIBGRAPI, LARS/SBR e WRE. Verificar os prazos e o limite de páginas no site de cada evento antes de fixar o escopo.
 
-**Estado deste rascunho.** Os números abaixo foram conferidos em 31/10 contra `experiments/results/{metrics,summary,stats_*}.csv` (2.900 execuções avaliadas: 2.720 da matriz principal, 112 da fumaça extrema e 68 do piloto do DCP). Referências usam a numeração da proposta (lista em `docs/relatorio_parcial.md` e `docs/leituras/README.md`); o que não tem número ali está marcado **[ref a conferir]**. Marcadores **[PENDENTE]** dependem de dado que ainda não existe. Decisões de análise que ainda não passaram pelo orientador estão em `docs/protocolo_experimental.md` §10 (provisórias).
+**Estado deste rascunho.** Os números abaixo foram conferidos em 31/10 contra `experiments/results/{metrics,summary,stats_*}.csv` (3.350 execuções avaliadas: 2.720 da matriz principal, 112 da fumaça extrema e 518 do DCP, 68 do piloto e 450 do completo). Referências usam a numeração da proposta (lista em `docs/relatorio_parcial.md` e `docs/leituras/README.md`); o que não tem número ali está marcado **[ref a conferir]**. Marcadores **[PENDENTE]** dependem de dado que ainda não existe. Decisões de análise que ainda não passaram pelo orientador estão em `docs/protocolo_experimental.md` §10 (provisórias).
 
 ## Título provisório
 *Smoke, Lenses and Learned Odometry: A Statistically Grounded Robustness Study of Classical and Deep Visual Odometry under Real Lens Failures and Physically Calibrated Smoke*
@@ -12,7 +12,7 @@ Jira: NATASHA-20. **Template e venue a definir com o orientador**: a proposta ci
 Fumaça emulada, mesmo densa (transmissão média 0,32), custa pouco aos métodos aprendidos (degradação mediana do ATE de +5,7% no DPVO e +2,6% no TartanVO) mas elimina o rastreamento do ORB-SLAM2 (0% de sucesso, RGB-D e monocular), enquanto as falhas de lente fazem o contrário: os métodos aprendidos continuam rastreando e derivam (+68% a +564%), e o modo de falha muda com o tipo de degradação (perda de rastreamento no ORB-SLAM2, deriva nos aprendidos). *(Provisória: a parte "validada contra fumaça real" é de uma só sequência real; o gap de domínio depende da coleta de campo.)*
 
 ## Resumo (rascunho)
-A odometria visual é essencial para a navegação de veículos autônomos em florestas, mas degradações ópticas como fumaça de queimadas e falhas de lente comprometem seu funcionamento. Avaliamos o ORB-SLAM2 (monocular e RGB-D), o TartanVO e o DPVO nas 16 sequências do QueensCAMP sob seis falhas de câmera e três níveis de fumaça emulada fisicamente sobre profundidade medida, com a fumaça comparada a fumaça real do SubT-MRS. Em 2.720 execuções com repetições e testes pareados com correção de Bonferroni, o DPVO e o TartanVO mantêm 100% de sucesso na fumaça, inclusive numa condição extrema (transmissão média 0,15), e perdem de +68% a +564% de precisão nas falhas de lente; o ORB-SLAM2 não rastreia na fumaça densa em nenhuma das 160 execuções. Num piloto de uma sequência, o pré-processamento com Dark Channel Prior devolveu o rastreamento ao ORB-SLAM2 RGB-D na fumaça densa (de 0/5 para 5/5 execuções) mas não ao monocular; **[PENDENTE: resultado do DCP nas 16 sequências, NATASHA-43]**. Código, configurações e resultados estarão em **[URL: repositório ainda privado, NATASHA-21]**.
+A odometria visual é essencial para a navegação de veículos autônomos em florestas, mas degradações ópticas como fumaça de queimadas e falhas de lente comprometem seu funcionamento. Avaliamos o ORB-SLAM2 (monocular e RGB-D), o TartanVO e o DPVO nas 16 sequências do QueensCAMP sob seis falhas de câmera e três níveis de fumaça emulada fisicamente sobre profundidade medida, com a fumaça comparada a fumaça real do SubT-MRS. Em 2.720 execuções com repetições e testes pareados com correção de Bonferroni, o DPVO e o TartanVO mantêm 100% de sucesso na fumaça, inclusive numa condição extrema (transmissão média 0,15), e perdem de +68% a +564% de precisão nas falhas de lente; o ORB-SLAM2 não rastreia na fumaça densa em nenhuma das 160 execuções. Nas 16 sequências, o pré-processamento com Dark Channel Prior devolveu o rastreamento ao ORB-SLAM2 RGB-D na fumaça densa (sucesso de 0% para 62,5%, contra 68,8% sem fumaça), com ATE 11% acima do da imagem limpa nas sequências recuperadas, mas não ao monocular (de 0% para 8,8%), que ainda perde metade do sucesso na imagem limpa (32,5% para 16,3%). Código, configurações e resultados estarão em **[URL: repositório ainda privado, NATASHA-21]**.
 
 ## Estrutura (6–8 páginas)
 | Seção | Conteúdo | Fonte no repositório | Tamanho |
@@ -121,7 +121,14 @@ ATE em metros, mediana das sementes das execuções válidas. Fonte: `results/me
 
 **5.5 Fumaça extrema, V = 3 m (exploratória, DPVO e TartanVO).** 112/112 execuções `ok`, nenhuma trajetória parada: **não há ponto de quebra** até transmissão 0,09. O custo é de precisão: degradação mediana +23,6% no DPVO (+5,7% na densa; Bonferroni 0,015) e +13,0% no TartanVO (+2,6%; Bonferroni 6,1e-5; as 16 sequências pioram). No DPVO é desigual: 3 sequências passam de +100% (06 +695%, 05 +317%, 15 +129%) e a correlação entre a transmissão média e a degradação é ρ = −0,70 (p = 0,003, n = 16); no TartanVO não há relação (ρ = −0,31, p = 0,25).
 
-**5.6 Dehazing (DCP).** *Piloto na seq. 09 (n = 1, só direção):* com DCP, o ORB-SLAM2 RGB-D na fumaça densa passa de 0/5 para 5/5 execuções válidas, com ATE de 0,154 m contra 0,151 m da original; sem fumaça, o DCP não estraga a imagem (0,151 → 0,157 m). O monocular continua sem inicializar na densa (0/5 nos dois casos); DPVO e TartanVO não mostram efeito fora da variação das sementes. **[PENDENTE: DCP completo em ORB-SLAM2, 480 execuções, em andamento (NATASHA-43); substituir este parágrafo pela taxa de sucesso e fração rastreada nas 16 sequências, `results/stats_dcp.csv`.]**
+**5.6 Dehazing (DCP; Tab. 6; exploratória, só ORB-SLAM2).** Taxa de sucesso (execuções válidas / 80; 16 sequências × 5 sementes), sem e com DCP:
+
+| ORB-SLAM2 | original | moderada | densa |
+|---|---|---|---|
+| RGB-D | 55 → 50 (68,8% → 62,5%) | 50 → 49 (62,5% → 61,3%) | **0 → 50 (0% → 62,5%)** |
+| monocular | 26 → 13 (32,5% → 16,3%) | 11 → 11 (13,8% → 13,8%) | 0 → 7 (0% → 8,8%) |
+
+*RGB-D:* na densa o DCP devolve o rastreamento em 10 das 11 sequências em que o método rastreia na original (50/55 execuções, contra 55/55); a 16 não volta e também falha com o DCP sem fumaça. As 5 sequências que já falham na original (02, 08, 10, 14, 15) continuam sem execução válida. O erro, porém, não volta ao da imagem limpa: nas 10 sequências recuperadas o ATE passa de 0,255 para 0,324 m (diferença percentual mediana +11%, 8 de 10 piores; p = 0,014 sem correção, comparação pós-hoc). Na imagem limpa o ATE não muda (0,255 → 0,252 m, p = 0,557), mas o sucesso cai 6,3 pontos por causa da seq. 16, e na moderada não há efeito (p = 0,131; Bonferroni 0,262). *Monocular:* o DCP não recupera o método na densa (7/80, em duas sequências; 27 das 80 execuções ainda não inicializam) e o prejudica na imagem limpa (o sucesso cai pela metade; 4 das 7 sequências que rastreavam perdem todas as execuções). *DPVO e TartanVO:* só o piloto da seq. 09 (n = 1), sem efeito fora da variação das sementes; como mantêm 100% de sucesso, não há falha a corrigir e o DCP completo não foi rodado neles. O DCP é, portanto, uma mitigação para o RGB-D na fumaça densa, não uma correção geral (hipótese de `protocolo_experimental.md` §10.7 parcialmente confirmada). `results/stats_dcp.csv`.
 
 **5.7 Custo (Tab. 4).** Medianas na condição original: DPVO 29,3 ms por quadro (pico de GPU 710 MiB); TartanVO 22,1 ms com 8 CPUs e 80,3 ms com 2 (237 MiB); ORB-SLAM2 12,9 ms (RGB-D) e 9,5 ms (mono), só tracking. Os tempos não são comparáveis entre famílias (o ORB-SLAM2 mede só o tracking) e o do TartanVO depende do `--cpus` do container.
 
@@ -149,6 +156,7 @@ ATE em metros, mediana das sementes das execuções válidas. Fonte: `results/me
 | Tab. 3 | Degradação, robustez e testes | `stats_report.md` | acima (5.3) |
 | Tab. 4 | Latência e memória | `metrics.csv` | acima (5.7) |
 | Tab. 5 | Fumaça sintética × real | `validate_smoke.py` / `nota_niveis_fumaca.md` | acima (3) |
+| Tab. 6 | DCP: taxa de sucesso do ORB-SLAM2 sem e com dehazing | `results/stats_dcp.csv`, `metrics.csv` | acima (5.6) |
 
 ## Contribuições (rascunho, ajustar após a reunião)
 1. Um protocolo de avaliação com **configuração justa entre paradigmas** (escala, stride, loop closure) e **análise estatística pareada** com repetições, aberto e reproduzível em Docker para GPUs Blackwell.
@@ -163,12 +171,12 @@ ATE em metros, mediana das sementes das execuções válidas. Fonte: `results/me
 4. **ORB-SLAM2 monocular:** 68% das execuções não têm resultado válido já na original; o ATE vem de poucas sequências e o método não é ranqueado.
 5. **TartanVO:** só 2 repetições (determinístico); tempo por quadro depende de `--cpus`.
 6. **Alinhamento Sim(3) para todos** (decisão de trabalho, a confirmar): o veredito de robustez não muda com SE(3) no RGB-D nem com escala por passo nos monoculares; a magnitude muda (ex.: TartanVO em `breakage`, 81% com Sim(3) e 233% com escala por passo).
-7. **Condições exploratórias** (extrema, DCP) ficam fora das famílias de Bonferroni; o piloto do DCP tem uma sequência.
+7. **Condições exploratórias** (extrema, DCP) ficam fora das famílias de Bonferroni. O DCP foi avaliado só no ORB-SLAM2 (DPVO e TartanVO só numa sequência), em um dataset, com estimativa de A por sequência e sem ajuste de parâmetros; o ATE pós-hoc do RGB-D recuperado não foi pré-registrado; a seq. 16 (o DCP quebra o RGB-D mesmo sem fumaça) e a piora do monocular na imagem limpa não foram investigadas.
 8. **Não feito:** análise por estrato (dinâmicas, pouca luz, estáticas); BRISQUE; pico de RAM por execução; gap de domínio (TartanAir sintético × real).
 9. As decisões de §10 do protocolo foram tomadas sem revisão do orientador.
 
 ## Pendências para fechar o artigo
-- DCP completo em ORB-SLAM2 (NATASHA-43) → 5.6 e Resumo.
+- ~~DCP completo em ORB-SLAM2 (NATASHA-43) → 5.6 e Resumo~~ feito em 01/11; falta decidir com o orientador se o DCP entra na mensagem central e na conclusão, e investigar a seq. 16.
 - Confirmação do orientador: venue, mensagem central, decisões de §10 (NATASHA-23).
 - Referências **[ref a conferir]**: Koschmieder, Umeyama, SAL, "Failure or Drift?", Kumar et al.; texto de trabalhos relacionados ainda com itens lidos só pelo resumo (NATASHA-37).
 - Dados de campo e EKF (NATASHA-13/14): bloqueio externo (coleta física).

@@ -37,7 +37,7 @@ Licenças dos algoritmos que as imagens Docker baixam (conferidas dentro das ima
 1. Orientador e UFAM aprovam publicar o código e escolhem a licença (seção 2). Depois: criar `LICENSE` na raiz e `experiments/algorithms/orbslam2/LICENSE`.
 2. Conferir a licença do QueensCAMP e atualizar `docs/datasets.md` e o README.
 3. Revisar o que entra: `docs/leituras/` (os fichamentos "precisam ser revisados pela Natasha antes de virar texto", `docs/leituras/README.md`), `docs/analise_concorrentes_2026.md` (avalia trabalhos de terceiros; revisar o tom), `docs/plano_inicial.md` e `docs/relatorio_parcial.md` (planejamento interno).
-4. Depois que o DCP completo (NATASHA-43) fechar e o orientador confirmar as decisões de §10: rodar `evaluate.py`, `stats_analysis.py` e `figures.py` uma última vez e copiar os CSV e as figuras finais para `experiments/resultados_publicados/` (pasta nova, versionada; `results/` continua ignorado).
+4. Depois que o orientador confirmar as decisões de §10 (o DCP completo, NATASHA-43, fechou em 01/11): rodar `evaluate.py`, `stats_analysis.py` e `figures.py` uma última vez e copiar os CSV e as figuras finais para `experiments/resultados_publicados/` (pasta nova, versionada; `results/` continua ignorado).
 5. Preencher "Como citar" no README quando houver artigo ou relatório; marcar uma versão (por exemplo `v1.0`) e, se quiserem um DOI, arquivar essa versão num repositório de preprints/dados.
 6. Decidir sobre o nome do servidor e o link do Jira (seção 1).
 7. Só então mudar a visibilidade do repositório no GitHub. **Não feito.**
