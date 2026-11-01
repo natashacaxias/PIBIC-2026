@@ -40,6 +40,13 @@ Conferido contra a página do artigo, da editora ou do repositório (resumo e me
 | ForestVO (P0622) | Pritchard, Ijaz, Clark, Kocer, *ForestVO: Enhancing Visual Odometry in Forest Environments through ForestGlue*, IEEE RA-L 2025, arXiv:2504.01261 | SuperPoint adaptado a cenas de floresta com LightGlue/SuperGlue retreinados em cenas de floresta do TartanAir, mais um transformador de pose; avaliado no TartanAir (competitivo com o TartanVO) |
 | Windy Forest (P2596) | Schofield, Bainbridge-Smith, Green, *Evaluating Visual Inertial Odometry Using the Windy Forest Dataset*, IVCNZ 2021 | título confirmado; o conteúdo do conjunto (sensores, como o vento é capturado) **não foi confirmado** |
 
+**Clássicas citadas no artigo (conferidas em 01/11/2026 por busca na web):**
+
+| Item | Referência conferida |
+|---|---|
+| Koschmieder | H. Koschmieder, *Theorie der horizontalen Sichtweite*, Beiträge zur Physik der freien Atmosphäre, vol. 12, 1924, p. 33–53 (a maioria das listas dá 33–53; uma dá 33–55: conferir a paginação no original antes de fechar a bibliografia). Teoria da distância de visibilidade horizontal, tese de habilitação do autor. |
+| Umeyama | S. Umeyama, *Least-squares estimation of transformation parameters between two point patterns*, IEEE TPAMI 13(4):376–380, 1991, DOI 10.1109/34.88573. Estima rotação, translação e escala por mínimos quadrados; base do alinhamento Sim(3) do ATE. |
+
 Mantém-se a afirmação de que, na pré-triagem, nenhum trabalho avalia VO sob fumaça de queimada em floresta tropical; ela vale para o corpus de 10/10 e **não** foi refeita com busca nova.
 
 ## Pendências

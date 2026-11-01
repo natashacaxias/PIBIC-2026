@@ -180,5 +180,5 @@ Na matriz de 2.720 execuções do QueensCAMP e nas condições exploratórias, a
 ## Pendências para fechar o artigo
 - ~~DCP completo em ORB-SLAM2 (NATASHA-43) → 5.6 e Resumo~~ feito em 01/11; falta decidir com o orientador se o DCP entra na mensagem central e na conclusão, e investigar a seq. 16.
 - Confirmação do orientador: venue, mensagem central, decisões de §10 (NATASHA-23).
-- Referências **[ref a conferir]**: Koschmieder, Umeyama, SAL, "Failure or Drift?", Kumar et al.; texto de trabalhos relacionados ainda com itens lidos só pelo resumo (NATASHA-37).
+- Referências: Koschmieder e Umeyama conferidos em 01/11 (`trabalhos_relacionados.md` §6; só a paginação de Koschmieder pede checagem no original); SAL, Tan et al., Ding et al. e ForestVO ainda lidos só pelo resumo; texto de trabalhos relacionados com itens marcados † (NATASHA-37).
 - Dados de campo e EKF (NATASHA-13/14): bloqueio externo (coleta física).
