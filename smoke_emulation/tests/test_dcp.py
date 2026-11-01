@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     import cv2
-    from dcp import dark_channel, dehaze, dehaze_sequence, estimate_atmospheric_light, guided_filter
+    from dcp import dark_channel, dehaze, dehaze_sequence, estimate_atmospheric_light, guided_filter, mean_gray
     from koschmieder import apply_smoke
 except ImportError:
     cv2 = None
@@ -78,6 +78,32 @@ class DarkChannelPriorTest(unittest.TestCase):
             saved = json.loads((root / "out" / "dcp_meta.json").read_text())
             self.assertEqual(saved["airlight_mode"], "sequence")
             self.assertTrue((root / "out" / "0002.png").exists())
+
+    def test_exposure_match_brings_mean_brightness_back_towards_the_input(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "in").mkdir()
+            for i in range(12):
+                cv2.imwrite(str(root / "in" / f"{i:04d}.png"), cv2.cvtColor(self.clean, cv2.COLOR_RGB2BGR))
+            plain = dehaze_sequence(root / "in", root / "plain", patch=7, radius=15)
+            matched = dehaze_sequence(root / "in", root / "matched", exposure_match="sequence", patch=7, radius=15)
+            self.assertEqual(plain["exposure_gain"], 1.0)
+            self.assertGreater(matched["exposure_gain"], 1.0)
+            self.assertEqual(json.loads((root / "matched" / "dcp_meta.json").read_text())["exposure_match"], "sequence")
+            read = lambda d: cv2.cvtColor(cv2.imread(str(root / d / "0000.png")), cv2.COLOR_BGR2RGB)  # noqa: E731
+            target = mean_gray(self.clean)
+            self.assertLess(abs(mean_gray(read("matched")) - target), abs(mean_gray(read("plain")) - target))
+
+    def test_exposure_match_rejects_unknown_mode_and_gain_scales_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "in").mkdir()
+            cv2.imwrite(str(root / "in" / "0000.png"), cv2.cvtColor(self.clean, cv2.COLOR_RGB2BGR))
+            with self.assertRaises(ValueError):
+                dehaze_sequence(root / "in", root / "out", exposure_match="frame")
+        dim, _, _ = dehaze(self.clean, patch=7, radius=15, gain=0.5)
+        full, _, _ = dehaze(self.clean, patch=7, radius=15)
+        self.assertLess(mean_gray(dim), 0.6 * mean_gray(full))
 
 
 if __name__ == "__main__":

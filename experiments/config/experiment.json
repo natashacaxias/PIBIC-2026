@@ -42,7 +42,10 @@
                      "_comentario": "controle: efeito do DCP sem fumaça. Baseline da Sprint 8 (NATASHA-17); rodar com --conditions"},
     "dcp_smoke_leve": {"kind": "dehaze", "source": "smoke_leve", "enabled": false},
     "dcp_smoke_moderada": {"kind": "dehaze", "source": "smoke_moderada", "enabled": false},
-    "dcp_smoke_densa": {"kind": "dehaze", "source": "smoke_densa", "enabled": false}
+    "dcp_smoke_densa": {"kind": "dehaze", "source": "smoke_densa", "enabled": false},
+    "dcpn_original": {"kind": "dehaze", "source": "original", "enabled": false, "dehaze_overrides": {"exposure_match": "sequence"},
+                      "_comentario": "DCP + ganho de exposição por sequência (devolve a luminância média da entrada); teste exploratório de 01/11 (docs/protocolo_experimental.md §10.7), rodar com --conditions"},
+    "dcpn_smoke_densa": {"kind": "dehaze", "source": "smoke_densa", "enabled": false, "dehaze_overrides": {"exposure_match": "sequence"}}
   },
   "dehaze": {"airlight_mode": "sequence", "patch": 15, "omega": 0.95, "t0": 0.1, "top_fraction": 0.001, "radius": 60, "eps": 0.0001},
   "smoke": {
@@ -86,7 +89,7 @@
     "monocular_primary": "sim3",
     "rgbd_primary": "sim3",
     "min_tracked_for_ate": 0.5,
-    "exploratory_conditions": ["smoke_extrema", "dcp_original", "dcp_smoke_leve", "dcp_smoke_moderada", "dcp_smoke_densa"],
+    "exploratory_conditions": ["smoke_extrema", "dcp_original", "dcp_smoke_leve", "dcp_smoke_moderada", "dcp_smoke_densa", "dcpn_original", "dcpn_smoke_densa"],
     "degenerate_scale_factor": 2.0,
     "_comentario": "monocular_primary e rgbd_primary: sim3, se3 (só RGB-D) ou stepscale (só monocular); decisão de 31/10 em docs/protocolo_experimental.md §10. min_tracked_for_ate: abaixo dessa fração rastreada a execução não entra no ATE. degenerate_scale_factor: fator f; em sensores métricos, escala Sim(3) fora de [1/f, f] vezes a mediana do original marca a execução como degenerada (heurística, limiar a validar)"
   }
