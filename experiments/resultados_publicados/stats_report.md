@@ -155,20 +155,22 @@ Parâmetros: bootstrap 10000 reamostragens (semente 0); robustez: rastreamento �
 | dpvo | dcp_smoke_densa | 1 | 0.248 | 0.232 | 1 | – | – | 1 | 6.99 | sim |
 | dpvo | dcp_smoke_leve | 1 | 0.222 | 0.232 | -1 | – | – | 1 | -4.54 | sim |
 | dpvo | dcp_smoke_moderada | 1 | 0.254 | 0.232 | 1 | – | – | 1 | 9.25 | sim |
-| dpvo | smoke_extrema | 16 | 0.329 | 0.25 | 0.735 | 0.00763 | 0.0381 | 1 | 23.6 | sim |
+| dpvo | smoke_extrema | 16 | 0.329 | 0.25 | 0.735 | 0.00763 | 0.0534 | 1 | 23.6 | sim |
 | orbslam2_mono | dcp_original | 3 | 0.425 | 0.233 | 0 | – | – | 0.0625 | -1.22 | não |
 | orbslam2_mono | dcp_smoke_densa | 2 | 0.665 | 0.182 | 1 | – | – | 0 | 210 | não |
 | orbslam2_mono | dcp_smoke_leve | 1 | 0.295 | 0.548 | -1 | – | – | 1 | -46.1 | sim |
 | orbslam2_mono | dcp_smoke_moderada | 2 | 0.929 | 0.39 | 0.333 | – | – | 0.0625 | 257 | não |
 | orbslam2_rgbd | dcp_original | 10 | 0.252 | 0.255 | -0.236 | 0.557 | 1 | 0.5 | 0.0308 | não |
-| orbslam2_rgbd | dcp_smoke_densa | 10 | 0.324 | 0.255 | 0.855 | 0.0137 | 0.0684 | 0.562 | 11.3 | não |
+| orbslam2_rgbd | dcp_smoke_densa | 10 | 0.324 | 0.255 | 0.855 | 0.0137 | 0.0957 | 0.562 | 11.3 | não |
 | orbslam2_rgbd | dcp_smoke_leve | 1 | 0.165 | 0.151 | 1 | – | – | 1 | 9.49 | sim |
 | orbslam2_rgbd | dcp_smoke_moderada | 10 | 0.256 | 0.255 | 0.2 | 0.625 | 1 | 0.562 | 3.26 | não |
+| orbslam2_rgbd | dcpn_original | 6 | 0.221 | 0.255 | -0.714 | 0.156 | 1 | 1 | -5.48 | sim |
+| orbslam2_rgbd | dcpn_smoke_densa | 6 | 0.195 | 0.255 | 0.333 | 0.562 | 1 | 0.833 | 10.5 | sim |
 | tartanvo | dcp_original | 1 | 0.482 | 0.503 | -1 | – | – | 1 | -4.13 | sim |
 | tartanvo | dcp_smoke_densa | 1 | 0.369 | 0.503 | -1 | – | – | 1 | -26.7 | sim |
 | tartanvo | dcp_smoke_leve | 1 | 0.469 | 0.503 | -1 | – | – | 1 | -6.66 | sim |
 | tartanvo | dcp_smoke_moderada | 1 | 0.465 | 0.503 | -1 | – | – | 1 | -7.49 | sim |
-| tartanvo | smoke_extrema | 16 | 0.888 | 0.742 | 1 | 3.05e-05 | 0.000153 | 1 | 13 | sim |
+| tartanvo | smoke_extrema | 16 | 0.888 | 0.742 | 1 | 3.05e-05 | 0.000214 | 1 | 13 | sim |
 
 ## DCP contra a condição de origem (ATE pareado por sequência; taxa de sucesso das duas)
 
@@ -185,7 +187,9 @@ Parâmetros: bootstrap 10000 reamostragens (semente 0); robustez: rastreamento �
 | orbslam2_rgbd | dcp_original | original | 10 | 0.252 | 0.255 | -0.000334 | -0.236 | 0.557 | 1 | 0.625 | 0.688 |
 | orbslam2_rgbd | dcp_smoke_densa | smoke_densa | 0 | – | – | – | – | – | – | 0.625 | 0 |
 | orbslam2_rgbd | dcp_smoke_leve | smoke_leve | 1 | 0.165 | 0.157 | 0.00803 | 1 | – | – | 1 | 1 |
-| orbslam2_rgbd | dcp_smoke_moderada | smoke_moderada | 10 | 0.256 | 0.261 | -0.0338 | -0.564 | 0.131 | 0.262 | 0.613 | 0.625 |
+| orbslam2_rgbd | dcp_smoke_moderada | smoke_moderada | 10 | 0.256 | 0.261 | -0.0338 | -0.564 | 0.131 | 0.393 | 0.613 | 0.625 |
+| orbslam2_rgbd | dcpn_original | original | 6 | 0.221 | 0.255 | -0.0149 | -0.714 | 0.156 | 0.469 | 1 | 1 |
+| orbslam2_rgbd | dcpn_smoke_densa | smoke_densa | 0 | – | – | – | – | – | – | 0.833 | 0 |
 | tartanvo | dcp_original | original | 1 | 0.482 | 0.503 | -0.0208 | -1 | – | – | 1 | 1 |
 | tartanvo | dcp_smoke_densa | smoke_densa | 1 | 0.369 | 0.519 | -0.151 | -1 | – | – | 1 | 1 |
 | tartanvo | dcp_smoke_leve | smoke_leve | 1 | 0.469 | 0.498 | -0.0292 | -1 | – | – | 1 | 1 |

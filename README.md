@@ -34,7 +34,7 @@ Dados brutos, corpus SQLite, PDFs, saídas e ambientes virtuais **não** são ve
 
 ## Estado do projeto (01/11/2026)
 
-- **Execuções concluídas:** 3.350 avaliadas. Matriz principal de 2.720 (ORB-SLAM2 monocular e RGB-D, TartanVO, DPVO × 16 sequências do QueensCAMP × 10 condições), 112 de uma fumaça extrema e 518 de dehazing (DCP): piloto na seq. 09 e execução completa no ORB-SLAM2. Resultados e decisões de análise em [`docs/protocolo_experimental.md`](docs/protocolo_experimental.md) §10; rascunho do artigo, com tabelas, em [`docs/artigo_esqueleto.md`](docs/artigo_esqueleto.md).
+- **Execuções concluídas:** 3.410 avaliadas. Matriz principal de 2.720 (ORB-SLAM2 monocular e RGB-D, TartanVO, DPVO × 16 sequências do QueensCAMP × 10 condições), 112 de uma fumaça extrema e 578 de dehazing (DCP): piloto na seq. 09, execução completa no ORB-SLAM2 e teste de normalização de exposição. Resultados e decisões de análise em [`docs/protocolo_experimental.md`](docs/protocolo_experimental.md) §10; rascunho do artigo, com tabelas, em [`docs/artigo_esqueleto.md`](docs/artigo_esqueleto.md).
 - **DCP no ORB-SLAM2:** devolve o rastreamento ao RGB-D na fumaça densa (sucesso de 0% para 62,5%), não recupera o monocular e o prejudica na imagem limpa (§10.7).
 - **Bloqueado por coleta física:** dataset piloto amazônico e EKF (NATASHA-13/14).
 - As decisões de análise de §10 são de trabalho e **ainda não foram revisadas pelo orientador**.
