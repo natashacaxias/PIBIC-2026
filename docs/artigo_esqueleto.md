@@ -66,7 +66,7 @@ Resumo de `protocolo_experimental.md` §2–§6 e §10. Pontos que o artigo prec
 
 ### 5. Resultados
 
-**5.1 Reprodução do QueensCAMP (Tab. 1).** Com Sim(3), o TartanVO fica a 1,03× do artigo (mediana das 16 sequências; erro relativo mediano 12%; Spearman 0,76). O ORB-SLAM2 RGB-D fica a 1,04× nas 11 sequências com valor no artigo e rastreamento ≥ 50% na nossa execução (17%; Spearman 0,92). **Lacuna:** o RGB-D perde o rastreamento nas sequências 02 (19% rastreado; artigo 0,24 m), 14 (3%; 0,52 m) e 15 (cai depois de reset, nas 5 sementes; 0,56 m), e não há valor do artigo para 08 e 10; a causa não foi investigada.
+**5.1 Reprodução do QueensCAMP (Tab. 1).** Com Sim(3), o TartanVO fica a 1,03× do artigo (mediana das 16 sequências; erro relativo mediano 12%; Spearman 0,76). O ORB-SLAM2 RGB-D fica a 1,04× nas 11 sequências com valor no artigo e rastreamento ≥ 50% na nossa execução (17%; Spearman 0,92). **Lacuna:** o RGB-D perde o rastreamento nas sequências 02 (19% rastreado; artigo 0,24 m), 14 (3%; 0,52 m) e 15 (cai depois de reset, nas 5 sementes; 0,56 m), e não há valor do artigo para 08 e 10; a causa não foi investigada, mas 14 e 15 são sequências de pouca luz e 02, 08 e 10 não (§10.10).
 
 | Seq | TartanVO artigo | TartanVO nosso | RGB-D artigo | RGB-D nosso (execuções válidas) | RGB-D rastreado |
 |---|---|---|---|---|---|
@@ -116,6 +116,8 @@ ATE em metros, mediana das sementes das execuções válidas. Fonte: `results/me
 | ORB-SLAM2 mono | 1787 | sem ATE | sem ATE | 434 | 32,4 | 14,0 | sem ATE |
 
 (mono: o ATE vem de poucas sequências com rastreamento ≥ 50%, ver Tab. 2; não é ranqueado.) Dos 36 testes contra a original (Wilcoxon pareado, Bonferroni), **9 são significativos: as 4 falhas de lente no DPVO e no TartanVO (8) e a lente molhada no ORB-SLAM2 RGB-D**; nenhuma condição de fumaça difere significativamente da original em DPVO e TartanVO. Entre métodos, só 3 dos 54 pares são significativos (DPVO pior que TartanVO em `breakage`, `dirt` e `wet`). ATE absoluto na original (Sim(3), mediana das sequências): DPVO 0,25 m, TartanVO 0,74 m.
+
+*Por estrato (descritivo, `protocolo_experimental.md` §10.10; 5 sequências dinâmicas, 3 de pouca luz, 8 estáticas).* Na original, o ORB-SLAM2 RGB-D tem 25/25 execuções válidas nas dinâmicas, 25/40 nas estáticas e 5/15 na pouca luz (duas das três sequências de pouca luz, 14 e 15, estão entre as que não reproduzimos); o DPVO e o TartanVO têm 100% nos três estratos. Na fumaça leve e na moderada o RGB-D mantém esses números nas dinâmicas e nas estáticas e cai para 1/15 e 0/15 na pouca luz. Não há diferença sistemática entre estratos na degradação dos métodos aprendidos com a fumaça; com 3 a 8 sequências por estrato, não testamos.
 
 **5.4 Falha × deriva.** O ORB-SLAM2 falha (perde o rastreamento ou não inicializa: fumaça densa 0% de sucesso; sujeira e condensação; ver Tab. 2); o DPVO e o TartanVO continuam rastreando (rastreamento 1,0) e acumulam erro (Tab. 3). A exceção do DPVO é `wet` e `condensation`, onde 18 execuções terminam com a trajetória parada e são contadas como perda de rastreamento (`protocolo_experimental.md` §10.4).
 
@@ -172,7 +174,7 @@ Na matriz de 2.720 execuções do QueensCAMP e nas condições exploratórias, a
 5. **TartanVO:** só 2 repetições (determinístico); tempo por quadro depende de `--cpus`.
 6. **Alinhamento Sim(3) para todos** (decisão de trabalho, a confirmar): o veredito de robustez não muda com SE(3) no RGB-D nem com escala por passo nos monoculares; a magnitude muda (ex.: TartanVO em `breakage`, 81% com Sim(3) e 233% com escala por passo).
 7. **Condições exploratórias** (extrema, DCP) ficam fora das famílias de Bonferroni. O DCP foi avaliado só no ORB-SLAM2 (DPVO e TartanVO só numa sequência), em um dataset, com estimativa de A por sequência e sem ajuste de parâmetros; o ATE pós-hoc do RGB-D recuperado não foi pré-registrado; a seq. 16 (o DCP quebra o RGB-D mesmo sem fumaça) e a piora do monocular na imagem limpa não foram investigadas.
-8. **Não feito:** análise por estrato (dinâmicas, pouca luz, estáticas); BRISQUE; pico de RAM por execução; gap de domínio (TartanAir sintético × real).
+8. **Não feito:** teste estatístico por estrato (só descrição, §10.10); BRISQUE; pico de RAM por execução; gap de domínio (TartanAir sintético × real).
 9. As decisões de §10 do protocolo foram tomadas sem revisão do orientador.
 
 ## Pendências para fechar o artigo

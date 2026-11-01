@@ -196,3 +196,18 @@ O `evaluate.py` não preenchia a latência das 1600 execuções do ORB-SLAM2 (o 
 | ORB-SLAM2 mono | 9,5 | n/a | só tracking, CPU |
 
 Os valores não são comparáveis entre as famílias (o DPVO e o TartanVO medem a inferência inteira; o ORB-SLAM2, só o tracking). O pico de RAM por execução não foi gravado; as medidas do spike (`ambiente.md`) são ~2 GiB no DPVO, ~1 GiB no TartanVO e ~0,4 GiB no ORB-SLAM2.
+
+### 10.10 Análise por estrato (01/11; descritiva, NATASHA-45)
+Estratos pelos atributos de `datasets.md`: **dinâmicas** (01, 04, 05, 06, 07; 5 sequências), **pouca luz** (14, 15, 16; 3) e **estáticas** (as outras 8). Sem testes: com 3, 5 e 8 sequências por estrato e sem correção possível, só descrição, a partir de `metrics.csv` (execuções válidas / execuções).
+
+| condição original | dinâmicas | pouca luz | estáticas |
+|---|---|---|---|
+| ORB-SLAM2 RGB-D | 25/25 | **5/15** | 25/40 |
+| ORB-SLAM2 mono | 9/25 | 2/15 | 15/40 |
+| TartanVO | 10/10 | 6/6 | 16/16 |
+| DPVO | 25/25 | 15/15 | 40/40 |
+
+- **Pouca luz explica parte das falhas de reprodução do RGB-D (§10.1):** 14 e 15 são sequências de pouca luz (a 16, a terceira, rastreia na original); as outras três sequências sem execução válida (02, 08, 10) são estáticas, então a pouca luz não explica tudo. O RGB-D na fumaça leve e na moderada mantém 25/25 nas dinâmicas e 25/40 nas estáticas, e cai para 1/15 e 0/15 na pouca luz (contra 5/15 na original).
+- **DPVO e TartanVO:** 100% de sucesso nos três estratos em quase todas as condições (exceções do DPVO: `condensation`, 67% na pouca luz; `wet`, 92% nas dinâmicas e 72% nas estáticas, as trajetórias paradas de §10.4). A degradação do ATE na fumaça é a mesma ordem de grandeza nos três estratos, exceto o DPVO na densa na pouca luz (+35%, contra +6% e +5%): isso vem da seq. 15 (+190%), enquanto a 16 melhora (−24%) e a 14 sobe 36%; com n = 3 não é efeito de estrato.
+- Nas falhas de lente a degradação do ATE do DPVO é maior nas estáticas (+620% a +1013% em `breakage`, `condensation`, `dirt` e `wet`) que nas dinâmicas (+89% a +560%); a razão é relativa à original de cada sequência, então depende também do ATE-base, e a comparação não foi corrigida. O monocular quase não tem pares válidos para comparar (§10.3).
+- Não se concluiu nada sobre o efeito de "estático × dinâmico" nos métodos aprendidos: o que se vê é consistente com não haver diferença sistemática, com n pequeno.
