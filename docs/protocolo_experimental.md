@@ -73,8 +73,10 @@ São **2.720 execuções**. As de GPU e as de CPU podem rodar em paralelo (dois 
 4. Adotar o SLAM Adversarial Lab (Koschmieder já implementado) ou manter o módulo próprio; ver `docs/trabalhos_relacionados.md`.
 5. As decisões de trabalho de §10 seguem valendo; o orientador pode revisá-las depois (todas são reversíveis).
 
-## 10. Decisões de 31/10 depois da matriz completa (provisórias)
+## 10. Decisões de 31/10 depois da matriz completa (adotadas como decisões de trabalho, sem revisão do orientador)
 Decisões de trabalho tomadas com Claude no papel de orientador, a pedido da Natasha, a partir dos dados das 2720 execuções, e seguidas sem esperar revisão. O orientador de verdade ainda não as viu: cada uma diz o que a sustenta e o que muda se ele discordar.
+
+**Status em 01/11.** A Natasha delegou a decisão de adotá-las ("você tem autonomia para essas decisões"), então ficam **adotadas** como decisões de trabalho do projeto, sem aprovação do orientador. Se ele discordar de alguma, `evaluate.py`, `stats_analysis.py` e `figures.py` recalculam tudo em cerca de 5 min e os números do artigo saem de `results/`.
 
 ### 10.1 Alinhamento: Sim(3) para todos os algoritmos
 **Evidência (reprodução do QueensCAMP, condição original, mediana das sementes por sequência):**

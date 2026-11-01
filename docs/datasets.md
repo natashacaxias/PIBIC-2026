@@ -5,6 +5,7 @@ Jira: NATASHA-24. Levantado em 10/10/2026 a partir dos artigos, do site e do có
 ## QueensCAMP
 - **Site:** https://larocs.github.io/queenscamp-dataset · **Código:** https://github.com/larocs/queenscamp-dataset (MIT) · **Artigo:** arXiv:2410.12520 (ICAR 2025)
 - **Hospedagem:** Google Drive, um arquivo por sequência.
+- **Licença (conferida em 01/11/2026 no site e no README do repositório):** o código é MIT; **os dados (imagens, profundidade, *ground truth*) não declaram licença**, só pedem citação do artigo. Por isso este projeto não redistribui os dados nem as imagens derivadas (fumaça sintética, dehazing) e cita o artigo. Para redistribuir qualquer coisa derivada seria preciso pedir permissão aos autores.
 
 | Seq | Full (GiB) | Bag (GB) | Duração (s) | Imagens | Dinâmica | Pouca luz |
 |---|---|---|---|---|---|---|

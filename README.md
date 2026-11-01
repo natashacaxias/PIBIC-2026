@@ -58,9 +58,10 @@ A matriz principal levou cerca de 43 h neste servidor. Tudo é retomável (`run_
 
 ## Dados e licenças
 
-- **QueensCAMP** e **SubT-MRS** não são redistribuídos aqui: `scripts/dataset.py download` baixa o QueensCAMP do site dos autores. Os quadros reais do SubT-MRS, a fumaça sintética e o dehazing gerados a partir dos dados ficam fora do git. A licença do SubT-MRS não é declarada na página dos autores; a do QueensCAMP não foi conferida. Detalhes em [`docs/datasets.md`](docs/datasets.md).
+- **QueensCAMP** e **SubT-MRS** não são redistribuídos aqui: `scripts/dataset.py download` baixa o QueensCAMP do site dos autores. Os quadros reais do SubT-MRS, a fumaça sintética e o dehazing gerados a partir dos dados ficam fora do git. A licença do SubT-MRS não é declarada na página dos autores; no QueensCAMP o código é MIT e os dados não declaram licença (só pedem citação; conferido em 01/11/2026). Detalhes em [`docs/datasets.md`](docs/datasets.md).
 - Os algoritmos rodam em containers construídos a partir dos repositórios originais em commits fixos: ORB-SLAM2 (GPLv3), TartanVO (BSD 3-Clause), DPVO (MIT).
-- **Licença do código e do texto deste repositório: ainda não definida.** A sugestão e a lista do que verificar antes de tornar o repositório público estão em [`docs/publicacao.md`](docs/publicacao.md).
+- **Licenças deste repositório (aplicadas em 01/11/2026 por decisão de trabalho; o repositório continua privado):** código sob **MIT** ([`LICENSE`](LICENSE)); `experiments/algorithms/orbslam2/` sob **GPL-3.0-or-later**, porque o *runner* é ligado ao ORB-SLAM2 (GPLv3); texto, figuras e resultados agregados (`docs/`, `experiments/resultados_publicados/`) sob **CC BY 4.0** ([`docs/LICENSE.md`](docs/LICENSE.md)). Isto é orientação técnica, não parecer jurídico: se a UFAM ou o SAGRES-Pro exigirem outra licença, trocar. A lista do que falta antes de tornar o repositório público está em [`docs/publicacao.md`](docs/publicacao.md).
+- Resultados finais (CSV agregados e figuras próprias, sem trajetórias nem quadros reais) em [`experiments/resultados_publicados/`](experiments/resultados_publicados/).
 
 ## Como citar
 
