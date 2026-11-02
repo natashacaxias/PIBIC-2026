@@ -39,7 +39,7 @@ Licenças dos algoritmos que as imagens Docker baixam (conferidas dentro das ima
 1. ~~Orientador e UFAM aprovam a licença~~ **Licenças aplicadas em 01/11** (seção 2); falta só a confirmação da UFAM/SAGRES-Pro.
 2. ~~Conferir a licença do QueensCAMP~~ **Feito em 01/11** (dados sem licença declarada; nada redistribuído).
 3. Revisar o que entra: `docs/leituras/` (os fichamentos "precisam ser revisados pela Natasha antes de virar texto", `docs/leituras/README.md`), `docs/analise_concorrentes_2026.md` (avalia trabalhos de terceiros; revisar o tom), `docs/plano_inicial.md` e `docs/relatorio_parcial.md` (planejamento interno).
-4. ~~Copiar os CSV e as figuras finais para `experiments/resultados_publicados/`~~ **Feito em 01/11** (3.410 execuções, atualizado depois do teste de exposição do DCP; sem a figura com quadros reais do SubT-MRS). Se o orientador mudar algo de §10, regenerar e copiar de novo.
+4. ~~Copiar os CSV e as figuras finais para `experiments/resultados_publicados/`~~ **Feito em 01/11** (3.445 execuções, atualizado depois dos testes de exposição do DCP no RGB-D e no monocular; sem a figura com quadros reais do SubT-MRS). Se o orientador mudar algo de §10, regenerar e copiar de novo.
 5. Preencher "Como citar" no README quando houver artigo ou relatório; marcar uma versão (por exemplo `v1.0`) e, se quiserem um DOI, arquivar essa versão num repositório de preprints/dados.
 6. Decidir sobre o nome do servidor e o link do Jira (seção 1).
 7. Só então mudar a visibilidade do repositório no GitHub. **Não feito.**

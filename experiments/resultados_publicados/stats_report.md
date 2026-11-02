@@ -160,6 +160,7 @@ Parâmetros: bootstrap 10000 reamostragens (semente 0); robustez: rastreamento �
 | orbslam2_mono | dcp_smoke_densa | 2 | 0.665 | 0.182 | 1 | – | – | 0 | 210 | não |
 | orbslam2_mono | dcp_smoke_leve | 1 | 0.295 | 0.548 | -1 | – | – | 1 | -46.1 | sim |
 | orbslam2_mono | dcp_smoke_moderada | 2 | 0.929 | 0.39 | 0.333 | – | – | 0.0625 | 257 | não |
+| orbslam2_mono | dcpn_original | 3 | 0.299 | 0.301 | -0.333 | – | – | 0 | -27.7 | não |
 | orbslam2_rgbd | dcp_original | 10 | 0.252 | 0.255 | -0.236 | 0.557 | 1 | 0.5 | 0.0308 | não |
 | orbslam2_rgbd | dcp_smoke_densa | 10 | 0.324 | 0.255 | 0.855 | 0.0137 | 0.0957 | 0.562 | 11.3 | não |
 | orbslam2_rgbd | dcp_smoke_leve | 1 | 0.165 | 0.151 | 1 | – | – | 1 | 9.49 | sim |
@@ -184,6 +185,7 @@ Parâmetros: bootstrap 10000 reamostragens (semente 0); robustez: rastreamento �
 | orbslam2_mono | dcp_smoke_densa | smoke_densa | 0 | – | – | – | – | – | – | 0.0875 | 0 |
 | orbslam2_mono | dcp_smoke_leve | smoke_leve | 1 | 0.295 | 0.163 | 0.132 | 1 | – | – | 0.8 | 1 |
 | orbslam2_mono | dcp_smoke_moderada | smoke_moderada | 3 | 1.52 | 0.498 | 0.153 | 1 | – | – | 0.138 | 0.138 |
+| orbslam2_mono | dcpn_original | original | 3 | 0.299 | 0.301 | -0.0833 | -0.333 | – | – | 0.2 | 0.743 |
 | orbslam2_rgbd | dcp_original | original | 10 | 0.252 | 0.255 | -0.000334 | -0.236 | 0.557 | 1 | 0.625 | 0.688 |
 | orbslam2_rgbd | dcp_smoke_densa | smoke_densa | 0 | – | – | – | – | – | – | 0.625 | 0 |
 | orbslam2_rgbd | dcp_smoke_leve | smoke_leve | 1 | 0.165 | 0.157 | 0.00803 | 1 | – | – | 1 | 1 |
