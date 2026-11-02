@@ -22,6 +22,7 @@ Koschmieder, com um dataset piloto coletado em Manaus.
 | `docs/analise_concorrentes_2026.md` | SAL, Failure or Drift? e Kumar et al.: o que muda na originalidade |
 | `docs/relatorio_parcial.md`, `docs/artigo_esqueleto.md` | Rascunho do relatório parcial e plano do artigo |
 | `docs/plano_coleta_piloto.md` | Plano de coleta do dataset piloto (aguarda dados do hardware) |
+| `docs/publicacao.md` | Auditoria do repositório, licença sugerida, declaração de dados e checklist antes de tornar público |
 | `experiments/` | Pipeline para a máquina do laboratório: Docker por algoritmo, matriz de execuções, avaliação |
 | `arquitetura_revisao_bibliografica_vo_slam.md` | Arquitetura da revisão bibliográfica (8 temas) |
 | `literature_review/` | Coleta, deduplicação, pré-triagem por regras e triagem auditáveis (Crossref/arXiv) |
@@ -30,6 +31,41 @@ Koschmieder, com um dataset piloto coletado em Manaus.
 
 Dados brutos, corpus SQLite, PDFs, saídas e ambientes virtuais **não** são versionados
 (ver `.gitignore`).
+
+## Estado do projeto (01/11/2026)
+
+- **Execuções concluídas:** 3.445 avaliadas. Matriz principal de 2.720 (ORB-SLAM2 monocular e RGB-D, TartanVO, DPVO × 16 sequências do QueensCAMP × 10 condições), 112 de uma fumaça extrema e 613 de dehazing (DCP): piloto na seq. 09, execução completa no ORB-SLAM2 e testes de normalização de exposição (RGB-D e monocular). Resultados e decisões de análise em [`docs/protocolo_experimental.md`](docs/protocolo_experimental.md) §10; rascunho do artigo, com tabelas, em [`docs/artigo_esqueleto.md`](docs/artigo_esqueleto.md).
+- **DCP no ORB-SLAM2:** devolve o rastreamento ao RGB-D na fumaça densa (sucesso de 0% para 62,5%), não recupera o monocular e o prejudica na imagem limpa; no RGB-D o custo vem do escurecimento, no monocular a causa está em aberto (§10.7).
+- **Bloqueado por coleta física:** dataset piloto amazônico e EKF (NATASHA-13/14).
+- As decisões de análise de §10 são de trabalho e **ainda não foram revisadas pelo orientador**.
+
+## Como reproduzir
+
+Requisitos: Ubuntu com driver NVIDIA ≥ 570 (a RTX 5070 Ti é Blackwell, sm_120), Docker com NVIDIA Container Toolkit, Python 3.10+ e ~140 GB de disco para os dados mais ~25 GB de imagens. Passo a passo em [`experiments/README.md`](experiments/README.md) e [`docs/ambiente.md`](docs/ambiente.md). Resumo:
+
+```bash
+cd experiments
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m unittest discover -s tests            # 45 testes, sem GPU
+docker build -t pibic/dpvo:0ac95b6 algorithms/dpvo        # idem tartanvo:ec2ecc3 e orbslam2:f2e6f51
+.venv/bin/python scripts/dataset.py download --dest /data/queenscamp_raw --sequences 09 --kind full
+.venv/bin/python scripts/dataset.py smoke --sequences 09
+.venv/bin/python scripts/run_matrix.py --algorithms dpvo --sequences 09 --conditions original --max-runs 1
+.venv/bin/python scripts/evaluate.py && .venv/bin/python scripts/stats_analysis.py && .venv/bin/python scripts/figures.py
+```
+
+A matriz principal levou cerca de 43 h neste servidor. Tudo é retomável (`run_matrix.py` pula execuções com `meta.json`).
+
+## Dados e licenças
+
+- **QueensCAMP** e **SubT-MRS** não são redistribuídos aqui: `scripts/dataset.py download` baixa o QueensCAMP do site dos autores. Os quadros reais do SubT-MRS, a fumaça sintética e o dehazing gerados a partir dos dados ficam fora do git. A licença do SubT-MRS não é declarada na página dos autores; no QueensCAMP o código é MIT e os dados não declaram licença (só pedem citação; conferido em 01/11/2026). Detalhes em [`docs/datasets.md`](docs/datasets.md).
+- Os algoritmos rodam em containers construídos a partir dos repositórios originais em commits fixos: ORB-SLAM2 (GPLv3), TartanVO (BSD 3-Clause), DPVO (MIT).
+- **Licenças deste repositório (aplicadas em 01/11/2026 por decisão de trabalho; o repositório continua privado):** código sob **MIT** ([`LICENSE`](LICENSE)); `experiments/algorithms/orbslam2/` sob **GPL-3.0-or-later**, porque o *runner* é ligado ao ORB-SLAM2 (GPLv3); texto, figuras e resultados agregados (`docs/`, `experiments/resultados_publicados/`) sob **CC BY 4.0** ([`docs/LICENSE.md`](docs/LICENSE.md)). Isto é orientação técnica, não parecer jurídico: se a UFAM ou o SAGRES-Pro exigirem outra licença, trocar. A lista do que falta antes de tornar o repositório público está em [`docs/publicacao.md`](docs/publicacao.md).
+- Resultados finais (CSV agregados e figuras próprias, sem trajetórias nem quadros reais) em [`experiments/resultados_publicados/`](experiments/resultados_publicados/).
+
+## Como citar
+
+[PENDENTE: preencher com o artigo ou o relatório final; ver `docs/artigo_esqueleto.md`.]
 
 ## Planejamento
 

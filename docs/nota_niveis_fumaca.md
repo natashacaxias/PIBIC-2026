@@ -28,3 +28,50 @@ Fixar t̄ = 0,75 / 0,50 / 0,25 daria V ≈ 43 / 17 / 7,4 m, valores próximos do
 ## Funções de apoio (`smoke_emulation/koschmieder.py`)
 - `mean_transmission(depth_m, beta)`: t̄ de um quadro.
 - `beta_for_mean_transmission(depth_m, alvo)`: β que produz o t̄ desejado (para a alternativa acima, se for adotada).
+
+## Validação contra fumaça real (31/10/2026, NATASHA-12)
+Fonte: SubT-MRS, sequência de fumaça, `cam_0` (ver `docs/datasets.md`). Os quadros reais são recortados no centro (60%) e redimensionados para 640×480; os sintéticos são os da seq. 09 do QueensCAMP. Medianas de 60 quadros por conjunto (40 nos trechos de fumaça leve), com as funções de `smoke_emulation/image_quality.py`:
+
+| conjunto | contraste RMS | canal escuro | densidade de bordas | entropia | pontos ORB | A estimado (DCP) |
+|---|---|---|---|---|---|---|
+| real, limpo (2700–5300) | 0,258 | 0,392 | 0,054 | 7,49 | 1336 | 1,00 |
+| real, fumaça rala (5400–6000 e 8300–8900) | 0,121–0,128 | 0,32–0,36 | 0,022–0,025 | 6,8–6,9 | 248–321 | 0,70–0,80 |
+| real, fumaça densa (6300–8100) | 0,085 | 0,491 | 0,006 | 6,38 | 17,5 | 0,74–0,76 |
+| QueensCAMP original | 0,175 | 0,385 | 0,066 | 7,19 | 861 | 0,95–0,99 |
+| sintética leve (V = 60 m) | 0,153 | 0,436 | 0,051 | 7,06 | 702 | 0,92–0,96 |
+| sintética moderada (V = 20 m) | 0,131 | 0,518 | 0,034 | 6,72 | 424 | 0,88–0,91 |
+| sintética densa (V = 6 m) | 0,070 | 0,681 | 0,006 | 5,88 | 57 | 0,82–0,83 |
+| sintética extrema (V = 3 m) | 0,027 | 0,762 | 0,000 | 4,31 | 0 | 0,80 |
+
+Cada cena tem a sua linha de base, então o que se compara é a razão fumaça/limpo:
+
+| | contraste | bordas | pontos ORB |
+|---|---|---|---|
+| real, rala | 0,47–0,50 | 0,41–0,46 | 0,19–0,24 |
+| real, densa | **0,33** | **0,11** | **0,013** |
+| sintética leve | 0,87 | 0,77 | 0,82 |
+| sintética moderada | 0,75 | 0,52 | 0,49 |
+| sintética densa | **0,40** | **0,09** | **0,066** |
+| sintética extrema | 0,15 | 0,00 | 0,00 |
+
+**Leitura:**
+- A **densa sintética reproduz a perda de contraste e de bordas da fumaça real densa** (0,40 contra 0,33 e 0,09 contra 0,11). Ela preserva mais pontos ORB do que a real (6,6% contra 1,3%), então é um pouco mais branda para o ORB-SLAM2 que a fumaça real mais densa.
+- A **leve e a moderada sintéticas são mais brandas que a fumaça rala real** (contraste 0,87 e 0,75 contra 0,5; pontos ORB 0,82 e 0,49 contra 0,2). Os trechos de fumaça rala do SubT-MRS têm densidade desconhecida e podem ser mais densos que V = 60 e 20 m, então isto é um limite, não uma falha da emulação.
+- A **extrema (V = 3 m) é mais severa que qualquer trecho real** da sequência (contraste 0,15, nenhum ponto ORB): serve como limite superior, não como realismo.
+- **Luz atmosférica A = 0,8 fica.** O estimador do DCP dá 0,70–0,80 nos quadros reais de fumaça (0,74–0,76 na densa) e 0,82–0,83 na sintética densa. O A só desloca o brilho; o contraste cai com a transmissão. Na cena limpa o estimador dá ~1,0 nas duas bases (viés da cena, já conhecido).
+- **Diferença visível:** a fumaça real é cinza-azulada ou amarronzada e a cena é escura (iluminada pelas lanternas da plataforma); a sintética é cinza-clara e a cena do QueensCAMP é clara. O painel `results/figures/smoke_real_vs_sintetica.png` (fora do git, por causa da licença dos quadros reais) mostra os dois lado a lado.
+
+**Limites:** uma só sequência real, de outra cena, outra câmera (fisheye recortada) e outra iluminação; sem referência alinhada (nada de SSIM); BRISQUE não rodado (`piq` não instalado). A comparação é de ordem de grandeza.
+
+### Sensibilidade ao preenchimento dos buracos de profundidade
+Metade dos pixels de profundidade do QueensCAMP é buraco (fração média 0,50 na seq. 09), preenchidos por dilatação 3×3 (o vizinho mais distante). Em 30 quadros da seq. 09, a transmissão média e a diferença de imagem (0–255) contra o preenchimento atual, para outras duas políticas:
+
+| V (m) | atual (dilata + máximo) | inpainting (Telea) | todo buraco = profundidade máxima |
+|---|---|---|---|
+| 60 | t̄ 0,880 | 0,880 (dif. 1,8) | 0,787 (dif. 7,5) |
+| 20 | 0,693 | 0,697 (dif. 4,2) | 0,526 (dif. 13,3) |
+| 6 | 0,347 | 0,376 (dif. 6,7) | 0,196 (dif. 12,1) |
+| 3 | 0,171 | 0,238 (dif. 6,0) | 0,086 (dif. 6,8) |
+
+**Decisão: manter o preenchimento atual.** Trocar por inpainting muda a transmissão média em até 0,03 nos três níveis principais (0,07 na extrema), bem menos que o espaçamento entre os níveis, e regenerar os 29 GB de fumaça obrigaria a repetir as 2720 execuções. A política de buracos é uma premissa: "todo buraco = máximo" daria uma fumaça bem mais densa (t̄ da densa 0,20 em vez de 0,35).
+

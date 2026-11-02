@@ -54,7 +54,7 @@ class FiguresTest(unittest.TestCase):
             seq_dir.mkdir(parents=True)
             run = root / 'runs' / 'dpvo' / '09' / 'original' / 'seed0'
             run.mkdir(parents=True)
-            for path, pts in ((seq_dir / 'groundtruth.txt', gt), (run / 'trajectory_tum.txt', 2 * gt)):
+            for path, pts in ((seq_dir / cfg['dataset']['groundtruth_file'], gt), (run / 'trajectory_tum.txt', 2 * gt)):
                 path.write_text(''.join(f'{ti:.6f} {p[0]} {p[1]} {p[2]} 0 0 0 1\n' for ti, p in zip(t, pts)))
             (run / 'meta.json').write_text(json.dumps(dict(algorithm='dpvo', sequence='09', condition='original',
                                                            seed=0, run_dir=str(run))))

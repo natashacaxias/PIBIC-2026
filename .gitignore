@@ -25,3 +25,6 @@ literature_review/outputs/
 # Documentos binários de trabalho
 *.docx
 ~$*
+
+# Logs de build das imagens Docker
+experiments/build_*.log

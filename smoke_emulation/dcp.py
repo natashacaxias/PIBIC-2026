@@ -9,7 +9,11 @@ Numa sequência de vídeo, estimar A quadro a quadro faz o brilho oscilar entre
 quadros, o que prejudica métodos fotométricos e de fluxo e mistura efeitos. Por
 isso o padrão é um único A por sequência (mediana das estimativas por quadro).
 
-Uso: python dcp.py --in-dir ENTRADA --out-dir SAIDA [--airlight sequence|frame]
+Em quadros sem névoa o DCP escurece a imagem (A estimado alto e t < 1 tornam (I - A)/t + A menor que I).
+`exposure_match="sequence"` aplica um único ganho por sequência que devolve a luminância média da entrada
+(mediana das razões entre a luminância de entrada e de saída numa amostra de quadros). O padrão é "none".
+
+Uso: python dcp.py --in-dir ENTRADA --out-dir SAIDA [--airlight sequence|frame] [--exposure-match none|sequence]
 """
 
 import argparse
@@ -58,8 +62,8 @@ def transmission(image, airlight, omega=DEFAULTS["omega"], patch=DEFAULTS["patch
     return np.clip(guided_filter(gray, raw.astype(np.float64), radius, eps), 0.0, 1.0)
 
 
-def dehaze(rgb, airlight=None, t0=DEFAULTS["t0"], **params):
-    """Recupera J = (I - A) / max(t, t0) + A. rgb: HxWx3 uint8. Retorna (uint8, A, t médio)."""
+def dehaze(rgb, airlight=None, t0=DEFAULTS["t0"], gain=1.0, **params):
+    """Recupera J = gain * ((I - A) / max(t, t0) + A). rgb: HxWx3 uint8. Retorna (uint8, A, t médio)."""
     image = rgb.astype(np.float64) / 255.0
     patch = params.get("patch", DEFAULTS["patch"])
     if airlight is None:
@@ -67,7 +71,7 @@ def dehaze(rgb, airlight=None, t0=DEFAULTS["t0"], **params):
                                               params.get("top_fraction", DEFAULTS["top_fraction"]))
     t = transmission(image, airlight, params.get("omega", DEFAULTS["omega"]), patch,
                      params.get("radius", DEFAULTS["radius"]), params.get("eps", DEFAULTS["eps"]))
-    recovered = (image - airlight) / np.maximum(t, t0)[..., None] + airlight
+    recovered = ((image - airlight) / np.maximum(t, t0)[..., None] + airlight) * gain
     return np.clip(np.rint(recovered * 255.0), 0, 255).astype(np.uint8), np.asarray(airlight), float(t.mean())
 
 
@@ -80,7 +84,21 @@ def sequence_airlight(frames, params, sample_every=10):
     return np.median(estimates, axis=0)
 
 
-def dehaze_sequence(in_dir, out_dir, airlight_mode="sequence", **overrides):
+def mean_gray(rgb):
+    return float(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY).mean())
+
+
+def sequence_exposure_gain(frames, fixed, params, sample_every=10):
+    """Mediana de (luminância de entrada / luminância do DCP) numa amostra de quadros."""
+    ratios = []
+    for path in frames[::sample_every]:
+        rgb = cv2.cvtColor(cv2.imread(str(path), cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
+        out, _, _ = dehaze(rgb, fixed, **params)
+        ratios.append(mean_gray(rgb) / max(mean_gray(out), 1e-6))
+    return float(np.median(ratios))
+
+
+def dehaze_sequence(in_dir, out_dir, airlight_mode="sequence", exposure_match="none", **overrides):
     in_dir, out_dir = Path(in_dir), Path(out_dir)
     params = dict(DEFAULTS, **overrides)
     frames = sorted(p for p in in_dir.iterdir() if p.suffix.lower() == ".png")
@@ -88,17 +106,21 @@ def dehaze_sequence(in_dir, out_dir, airlight_mode="sequence", **overrides):
         raise FileNotFoundError(f"nenhum PNG em {in_dir}")
     if airlight_mode not in ("sequence", "frame"):
         raise ValueError("airlight_mode deve ser 'sequence' ou 'frame'")
+    if exposure_match not in ("none", "sequence"):
+        raise ValueError("exposure_match deve ser 'none' ou 'sequence'")
     out_dir.mkdir(parents=True, exist_ok=True)
     fixed = sequence_airlight(frames, params) if airlight_mode == "sequence" else None
+    gain = sequence_exposure_gain(frames, fixed, params) if exposure_match == "sequence" else 1.0
     airlights, mean_t = [], []
     for path in frames:
         rgb = cv2.cvtColor(cv2.imread(str(path), cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
-        out, airlight, t = dehaze(rgb, fixed, **params)
+        out, airlight, t = dehaze(rgb, fixed, gain=gain, **params)
         airlights.append(airlight)
         mean_t.append(t)
         cv2.imwrite(str(out_dir / path.name), cv2.cvtColor(out, cv2.COLOR_RGB2BGR))
     digest = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     meta = {"method": "dark_channel_prior+guided_filter", "params": params, "airlight_mode": airlight_mode,
+            "exposure_match": exposure_match, "exposure_gain": gain,
             "airlight_rgb_median": np.median(airlights, axis=0).tolist(),
             "airlight_rgb_std": np.std(airlights, axis=0).tolist(),
             "mean_transmission": float(np.mean(mean_t)), "n_frames": len(frames), "source_dir": str(in_dir),
@@ -112,11 +134,12 @@ def main():
     parser.add_argument("--in-dir", required=True)
     parser.add_argument("--out-dir", required=True)
     parser.add_argument("--airlight", choices=["sequence", "frame"], default="sequence")
+    parser.add_argument("--exposure-match", choices=["none", "sequence"], default="none")
     for name, value in DEFAULTS.items():
         parser.add_argument(f"--{name.replace('_', '-')}", type=type(value), default=value)
     args = parser.parse_args()
     overrides = {name: getattr(args, name) for name in DEFAULTS}
-    meta = dehaze_sequence(args.in_dir, args.out_dir, args.airlight, **overrides)
+    meta = dehaze_sequence(args.in_dir, args.out_dir, args.airlight, args.exposure_match, **overrides)
     print(f"{meta['n_frames']} quadros, A={np.round(meta['airlight_rgb_median'], 3)}, "
           f"t médio={meta['mean_transmission']:.3f} → {args.out_dir}")
 

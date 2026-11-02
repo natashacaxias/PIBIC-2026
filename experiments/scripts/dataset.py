@@ -132,7 +132,8 @@ def dehaze(cfg, sequences, conditions):
             if (out / 'dcp_meta.json').exists():
                 print(f'já existe: {out}')
                 continue
-            meta = dehaze_sequence(condition_rgb_dir(cfg, seq, cond['source']), out, mode, **params)
+            meta = dehaze_sequence(condition_rgb_dir(cfg, seq, cond['source']), out, mode,
+                                   **dict(params, **cond.get('dehaze_overrides', {})))
             print(f"seq {seq} {name}: {meta['n_frames']} quadros, A={meta['airlight_rgb_median']}")
 
 

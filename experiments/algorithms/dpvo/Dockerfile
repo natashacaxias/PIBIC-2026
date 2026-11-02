@@ -20,13 +20,19 @@ RUN pip3 install "numpy==1.26.4" tensorboard numba tqdm einops pypose kornia ply
 RUN git clone --recursive https://github.com/princeton-vl/DPVO.git /opt/DPVO \
     && cd /opt/DPVO && git checkout 0ac95b656d1fda91c271d2a106460d19ad966fc7 && git submodule update --init --recursive
 WORKDIR /opt/DPVO
+# PyTorch >= 2.7 removeu Tensor::type() nos dispatches; o código original do DPVO ainda o usa.
+# dpvo/loop_closure não tem __init__.py no repositório, então o find_packages() a deixa de fora.
 RUN wget -q https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip \
     && unzip -q eigen-3.4.0.zip -d thirdparty && rm eigen-3.4.0.zip \
+    && find dpvo -name '*.cu' -exec sed -i -E 's/(AT_DISPATCH_[A-Z_]*\(\s*[A-Za-z0-9_]+)\.type\(\)/\1.scalar_type()/' {} + \
+    && find dpvo \( -name '*.cu' -o -name '*.cpp' \) -exec sed -i -E 's/(DISPATCH_GROUP_AND_FLOATING_TYPES\([A-Za-z0-9_]+,\s*[A-Za-z0-9_]+)\.type\(\)/\1.scalar_type()/' {} + \
+    && sed -i 's/::detail::scalar_type(the_type)/the_type/' dpvo/lietorch/include/dispatch.h \
+    && touch dpvo/loop_closure/__init__.py \
     && pip3 install --no-build-isolation .
 # Só os pesos (o script oficial também baixa ~2 GB de dados de teste que não usamos).
 RUN wget -q -O models.zip "https://www.dropbox.com/scl/fo/2g6e134ruh1acmaye5bmy/AK0DY9WLZ25elq-7N7sJcB0/models.zip?rlkey=4j336vcc4h324j4p4ji3ppl0t" \
     && unzip -q models.zip && rm models.zip && ls -l *.pth
 
 RUN pip3 freeze > /opt/pip-freeze.txt
-COPY run_dpvo.py /opt/run_dpvo.py
+COPY pose_chain.py run_dpvo.py /opt/
 ENTRYPOINT ["python3", "/opt/run_dpvo.py"]

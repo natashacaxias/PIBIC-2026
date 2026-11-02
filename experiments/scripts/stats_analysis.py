@@ -11,7 +11,11 @@ entre condições. Três saídas em <results_root>/:
   stats_vs_original.csv   cada método, condição × original, sobre o ATE:
                           Wilcoxon pareado e Bonferroni (família: métodos × condições)
   stats_robustness.csv    critério relativo de robustez (docs/protocolo_experimental.md §5)
-  stats_report.md         as três tabelas em Markdown
+  stats_exploratory.csv   condições de evaluation.exploratory_conditions (ex.: smoke_extrema): contra a original,
+                          com Bonferroni só entre elas; ficam fora das famílias acima
+  stats_dcp.csv           cada condição com DCP contra a sua origem (dcp_smoke_densa × smoke_densa): ATE pareado por
+                          sequência e taxa de sucesso das duas, com Bonferroni só entre elas
+  stats_report.md         as tabelas em Markdown
 
 Sequências sem ATE (nenhuma execução válida) ficam fora dos testes de ATE e
 contam como falha no critério de rastreamento.
@@ -139,6 +143,60 @@ def robustness(rows, min_tracking=0.8, coverage=0.75, max_degradation_pct=50.0):
     return out
 
 
+def split_exploratory(rows, names):
+    """Separa as condições exploratórias; a original só acompanha os algoritmos que as têm."""
+    names = set(names)
+    exploratory_algorithms = {r['algorithm'] for r in rows if r['condition'] in names}
+    main = [r for r in rows if r['condition'] not in names]
+    exploratory = [r for r in rows if r['condition'] in names
+                   or (r['condition'] == 'original' and r['algorithm'] in exploratory_algorithms)]
+    return main, exploratory
+
+
+def exploratory_results(rows, names, n_boot=10000, seed=0, **robust_args):
+    """ATE contra a original e critério de robustez das condições exploratórias, Bonferroni só entre elas."""
+    names = set(names)
+    _, exploratory = split_exploratory(rows, names)
+    if not any(r['condition'] in names for r in exploratory):
+        return []
+    robust = {(r['algorithm'], r['condition']): r for r in robustness(exploratory, **robust_args)}
+    out = []
+    for result in vs_original(exploratory, n_boot, seed):
+        extra = robust[(result['algorithm'], result['condition'])]
+        out.append({**result, 'n_sequences': extra['n_sequences'],
+                    'frac_sequences_tracking_ok': extra['frac_sequences_tracking_ok'],
+                    'median_ate_degradation_pct': extra['median_ate_degradation_pct'], 'robust': extra['robust']})
+    return out
+
+
+def dcp_vs_source(rows, sources, n_boot=10000, seed=0):
+    """ATE (pareado por sequência) e taxa de sucesso de cada condição com DCP contra a sua origem.
+
+    sources: {'dcp_smoke_densa': 'smoke_densa', ...}. A taxa de sucesso junta todas as execuções das sequências da
+    condição (n_valid / n_runs), então sobe de 0 para algo quando o DCP recupera um método que falhava; a da origem
+    só conta as sequências que a condição com DCP cobre (piloto numa sequência não compara com as 16).
+    """
+    table = index(rows, 'ate_m_median')
+    present = {(r['algorithm'], r['condition']) for r in rows}
+    results = []
+    for algorithm in sorted({r['algorithm'] for r in rows}):
+        for condition, source in sorted(sources.items()):
+            if (algorithm, condition) not in present:
+                continue
+            x, y = paired(table, (algorithm, condition), (algorithm, source))
+            row = dict(algorithm=algorithm, condition=condition, source=source, metric='ate_m_median',
+                       **compare(x, y, n_boot, seed))
+            covered = {r['sequence'] for r in rows if r['algorithm'] == algorithm and r['condition'] == condition}
+            for tag, name in (('dcp', condition), ('source', source)):
+                items = [r for r in rows if r['algorithm'] == algorithm and r['condition'] == name
+                         and r['sequence'] in covered]
+                runs = sum(r.get('n_runs') or 0 for r in items)
+                row[f'n_sequences_{tag}'] = len(items)
+                row[f'success_rate_{tag}'] = sum(r.get('n_valid') or 0 for r in items) / runs if runs else None
+            results.append(row)
+    return bonferroni(results)
+
+
 def write_csv(rows, path):
     if not rows:
         return
@@ -164,8 +222,8 @@ def markdown_table(rows, columns):
     return '\n'.join(lines)
 
 
-def report(pair, vs_orig, robust, params):
-    return '\n\n'.join([
+def report(pair, vs_orig, robust, params, exploratory=(), dcp=()):
+    sections = [
         '# Relatório estatístico',
         f"Parâmetros: bootstrap {params['n_boot']} reamostragens (semente {params['seed']}); "
         f"robustez: rastreamento ≥ {params['min_tracking']} em ≥ {params['coverage']:.0%} das sequências e "
@@ -179,7 +237,17 @@ def report(pair, vs_orig, robust, params):
         '## Critério de robustez',
         markdown_table(robust, ['algorithm', 'condition', 'n_sequences', 'frac_sequences_tracking_ok',
                                 'median_ate_degradation_pct', 'robust']),
-    ]) + '\n'
+    ]
+    if exploratory:
+        sections += ['## Condições exploratórias (fora das famílias de Bonferroni; p ajustado só entre elas)',
+                     markdown_table(exploratory, ['algorithm', 'condition', 'n', 'median_a', 'median_b', 'effect_r', 'p',
+                                                  'p_bonferroni', 'frac_sequences_tracking_ok',
+                                                  'median_ate_degradation_pct', 'robust'])]
+    if dcp:
+        sections += ['## DCP contra a condição de origem (ATE pareado por sequência; taxa de sucesso das duas)',
+                     markdown_table(dcp, ['algorithm', 'condition', 'source', 'n', 'median_a', 'median_b', 'median_diff',
+                                          'effect_r', 'p', 'p_bonferroni', 'success_rate_dcp', 'success_rate_source'])]
+    return '\n\n'.join(sections) + '\n'
 
 
 def main():
@@ -191,17 +259,26 @@ def main():
     parser.add_argument('--coverage', type=float, default=0.75)
     parser.add_argument('--max-degradation', type=float, default=50.0, help='limite X da degradação mediana (%%)')
     args = parser.parse_args()
-    out = Path(load_config(args.config)['paths']['results_root'])
-    rows = load_summary(out / 'summary.csv')
+    cfg = load_config(args.config)
+    out = Path(cfg['paths']['results_root'])
+    all_rows = load_summary(out / 'summary.csv')
+    names = cfg['evaluation'].get('exploratory_conditions', [])
+    rows, _ = split_exploratory(all_rows, names)
     pair = pairwise(rows, args.n_boot, args.seed)
     vs_orig = vs_original(rows, args.n_boot, args.seed)
     robust = robustness(rows, args.min_tracking, args.coverage, args.max_degradation)
+    exploratory = exploratory_results(all_rows, names, args.n_boot, args.seed, min_tracking=args.min_tracking,
+                                      coverage=args.coverage, max_degradation_pct=args.max_degradation)
     write_csv(pair, out / 'stats_pairwise.csv')
     write_csv(vs_orig, out / 'stats_vs_original.csv')
     write_csv(robust, out / 'stats_robustness.csv')
+    write_csv(exploratory, out / 'stats_exploratory.csv')
+    sources = {name: spec['source'] for name, spec in cfg['conditions'].items() if spec.get('kind') == 'dehaze'}
+    dcp = dcp_vs_source(all_rows, sources, args.n_boot, args.seed)
+    write_csv(dcp, out / 'stats_dcp.csv')
     params = dict(n_boot=args.n_boot, seed=args.seed, min_tracking=args.min_tracking, coverage=args.coverage,
                   max_degradation=args.max_degradation)
-    (out / 'stats_report.md').write_text(report(pair, vs_orig, robust, params), encoding='utf-8')
+    (out / 'stats_report.md').write_text(report(pair, vs_orig, robust, params, exploratory, dcp), encoding='utf-8')
     print(f'{len(pair)} comparações entre métodos, {len(vs_orig)} contra a original → {out / "stats_report.md"}')
     return 0
 
